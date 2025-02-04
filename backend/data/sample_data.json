@@ -1,0 +1,172 @@
+[
+  {
+    "collection": "projects",
+    "data": [
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d1" },
+        "name": "Commercial Complex Alpha",
+        "estimatedBudget": 1500000,
+        "actualCost": 750000,
+        "startDate": { "$date": "2024-02-01T00:00:00Z" },
+        "endDate": { "$date": "2024-12-31T00:00:00Z" },
+        "status": "ongoing",
+        "description": "A 10-story commercial building with underground parking",
+        "completion": 45,
+        "stakeholders": ["John Architect", "Sarah Engineer", "Mike Contractor"],
+        "phaseCount": 3,
+        "taskCount": 8,
+        "budgetVariance": -50000,
+        "createdAt": { "$date": "2024-01-15T08:00:00Z" },
+        "updatedAt": { "$date": "2024-02-20T15:30:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d2" },
+        "name": "Residential Tower Beta",
+        "estimatedBudget": 2000000,
+        "actualCost": 900000,
+        "startDate": { "$date": "2024-03-01T00:00:00Z" },
+        "endDate": { "$date": "2025-02-28T00:00:00Z" },
+        "status": "ongoing",
+        "description": "A luxury residential tower with 20 floors and amenities",
+        "completion": 30,
+        "stakeholders": ["Emma Designer", "Tom Engineer", "David Constructor"],
+        "phaseCount": 4,
+        "taskCount": 12,
+        "budgetVariance": 20000,
+        "createdAt": { "$date": "2024-02-01T10:00:00Z" },
+        "updatedAt": { "$date": "2024-03-15T12:45:00Z" }
+      }
+    ]
+  },
+  {
+    "collection": "phases",
+    "data": [
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d3" },
+        "projectId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d1" },
+        "name": "Foundation Work",
+        "estimatedBudget": 250000,
+        "actualCost": 260000,
+        "startDate": { "$date": "2024-02-01T00:00:00Z" },
+        "endDate": { "$date": "2024-03-15T00:00:00Z" },
+        "status": "completed",
+        "description": "Excavation and foundation laying for the main building",
+        "completion": 100,
+        "laborCost": 100000,
+        "materialCost": 140000,
+        "equipmentCost": 20000,
+        "dependencies": [],
+        "taskCount": 3,
+        "createdAt": { "$date": "2024-01-20T09:00:00Z" },
+        "updatedAt": { "$date": "2024-03-15T16:20:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d4" },
+        "projectId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d1" },
+        "name": "Structural Framework",
+        "estimatedBudget": 500000,
+        "actualCost": 300000,
+        "startDate": { "$date": "2024-03-16T00:00:00Z" },
+        "endDate": { "$date": "2024-06-30T00:00:00Z" },
+        "status": "in-progress",
+        "description": "Construction of main structural framework and floors",
+        "completion": 60,
+        "laborCost": 200000,
+        "materialCost": 250000,
+        "equipmentCost": 50000,
+        "dependencies": ["65f1a1b1c1d1e1f1a1b1c1d3"],
+        "taskCount": 5,
+        "createdAt": { "$date": "2024-02-15T11:30:00Z" },
+        "updatedAt": { "$date": "2024-04-01T14:15:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d5" },
+        "projectId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d2" },
+        "name": "Site Preparation",
+        "estimatedBudget": 300000,
+        "actualCost": 280000,
+        "startDate": { "$date": "2024-03-01T00:00:00Z" },
+        "endDate": { "$date": "2024-04-15T00:00:00Z" },
+        "status": "in-progress",
+        "description": "Site clearing, leveling, and initial setup",
+        "completion": 80,
+        "laborCost": 120000,
+        "materialCost": 130000,
+        "equipmentCost": 50000,
+        "dependencies": [],
+        "taskCount": 4,
+        "createdAt": { "$date": "2024-02-20T13:45:00Z" },
+        "updatedAt": { "$date": "2024-04-05T10:30:00Z" }
+      }
+    ]
+  },
+  {
+    "collection": "tasks",
+    "data": [
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d6" },
+        "phaseId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d3" },
+        "name": "Foundation Excavation",
+        "estimatedCost": 75000,
+        "actualCost": 78000,
+        "startDate": { "$date": "2024-02-01T00:00:00Z" },
+        "endDate": { "$date": "2024-02-15T00:00:00Z" },
+        "status": "completed",
+        "description": "Excavation of foundation area according to architectural plans",
+        "completion": 100,
+        "type": "construction",
+        "assignedTo": "John Construction Team",
+        "createdAt": { "$date": "2024-01-25T08:30:00Z" },
+        "updatedAt": { "$date": "2024-02-15T17:00:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d7" },
+        "phaseId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d3" },
+        "name": "Foundation Reinforcement",
+        "estimatedCost": 100000,
+        "actualCost": 102000,
+        "startDate": { "$date": "2024-02-16T00:00:00Z" },
+        "endDate": { "$date": "2024-03-01T00:00:00Z" },
+        "status": "completed",
+        "description": "Installation of reinforcement bars and mesh",
+        "completion": 100,
+        "type": "construction",
+        "assignedTo": "Sarah Construction Team",
+        "createdAt": { "$date": "2024-02-10T09:15:00Z" },
+        "updatedAt": { "$date": "2024-03-01T16:45:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d8" },
+        "phaseId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d4" },
+        "name": "First Floor Framework",
+        "estimatedCost": 150000,
+        "actualCost": 80000,
+        "startDate": { "$date": "2024-03-16T00:00:00Z" },
+        "endDate": { "$date": "2024-04-15T00:00:00Z" },
+        "status": "in-progress",
+        "description": "Construction of first floor structural framework",
+        "completion": 60,
+        "type": "construction",
+        "assignedTo": "Mike Construction Team",
+        "createdAt": { "$date": "2024-03-10T10:00:00Z" },
+        "updatedAt": { "$date": "2024-04-01T15:30:00Z" }
+      },
+      {
+        "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d9" },
+        "phaseId": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d5" },
+        "name": "Site Survey",
+        "estimatedCost": 50000,
+        "actualCost": 48000,
+        "startDate": { "$date": "2024-03-01T00:00:00Z" },
+        "endDate": { "$date": "2024-03-10T00:00:00Z" },
+        "status": "completed",
+        "description": "Detailed site survey and marking",
+        "completion": 100,
+        "type": "planning",
+        "assignedTo": "Tom Survey Team",
+        "createdAt": { "$date": "2024-02-25T11:20:00Z" },
+        "updatedAt": { "$date": "2024-03-10T14:45:00Z" }
+      }
+    ]
+  }
+] 

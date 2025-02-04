@@ -1,0 +1,36 @@
+[
+  {
+    "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d1" },
+    "name": "Commercial Complex Alpha",
+    "estimatedBudget": 1500000,
+    "actualCost": 750000,
+    "startDate": { "$date": "2024-02-01T00:00:00Z" },
+    "endDate": { "$date": "2024-12-31T00:00:00Z" },
+    "status": "ongoing",
+    "description": "A 10-story commercial building with underground parking",
+    "completion": 45,
+    "stakeholders": ["John Architect", "Sarah Engineer", "Mike Contractor"],
+    "phaseCount": 3,
+    "taskCount": 8,
+    "budgetVariance": -50000,
+    "createdAt": { "$date": "2024-01-15T08:00:00Z" },
+    "updatedAt": { "$date": "2024-02-20T15:30:00Z" }
+  },
+  {
+    "_id": { "$oid": "65f1a1b1c1d1e1f1a1b1c1d2" },
+    "name": "Residential Tower Beta",
+    "estimatedBudget": 2000000,
+    "actualCost": 900000,
+    "startDate": { "$date": "2024-03-01T00:00:00Z" },
+    "endDate": { "$date": "2025-02-28T00:00:00Z" },
+    "status": "ongoing",
+    "description": "A luxury residential tower with 20 floors and amenities",
+    "completion": 30,
+    "stakeholders": ["Emma Designer", "Tom Engineer", "David Constructor"],
+    "phaseCount": 4,
+    "taskCount": 12,
+    "budgetVariance": 20000,
+    "createdAt": { "$date": "2024-02-01T10:00:00Z" },
+    "updatedAt": { "$date": "2024-03-15T12:45:00Z" }
+  }
+] 
