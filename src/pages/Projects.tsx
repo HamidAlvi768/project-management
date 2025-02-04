@@ -7,92 +7,103 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { PageTitle } from '../components/ui/page-title';
-
-interface Project {
-  id: number;
-  name: string;
-  estimatedBudget: number;
-  actualCost: number;
-  startDate: string;
-  endDate: string;
-  status: 'ongoing' | 'completed' | 'on-hold';
-  description: string;
-  completion: number;
-  stakeholders: string[];
-  phaseCount: number;
-  taskCount: number;
-  budgetVariance: number;
-}
+import { projectApi } from '../services/api';
+import { IProject } from '../services/types';
+import { toast } from '../components/ui/use-toast';
 
 const Projects: React.FC = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 1,
-      name: "Commercial Complex Alpha",
-      estimatedBudget: 1500000,
-      actualCost: 1450000,
-      startDate: "2024-02-01",
-      endDate: "2024-12-31",
-      status: "ongoing",
-      description: "A 10-story commercial building with underground parking",
-      completion: 45,
-      stakeholders: ["John Architect", "Sarah Engineer", "Mike Contractor"],
-      phaseCount: 5,
-      taskCount: 28,
-      budgetVariance: -50000 // negative means under budget (good)
-    },
-    {
-      id: 2,
-      name: "Residential Towers Beta",
-      estimatedBudget: 2500000,
-      actualCost: 2600000,
-      startDate: "2024-03-15",
-      endDate: "2025-06-30",
-      status: "ongoing",
-      description: "Twin residential towers with modern amenities",
-      completion: 30,
-      stakeholders: ["Emma Architect", "David Engineer", "Tom Contractor"],
-      phaseCount: 6,
-      taskCount: 42,
-      budgetVariance: 100000 // positive means over budget (bad)
-    }
-  ]);
-
+  const [projects, setProjects] = useState<IProject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Fetch projects
+  const fetchProjects = async (page: number = 1) => {
+    try {
+      setIsLoading(true);
+      const response = await projectApi.getAll(page);
+      setProjects(response.data);
+      if (response.pagination) {
+        setTotalPages(response.pagination.pages);
+        setCurrentPage(response.pagination.page);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch projects",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   const handleAddProject = () => {
     setSelectedProject(null);
     setIsModalOpen(true);
   };
 
-  const handleEditProject = (project: Project) => {
+  const handleEditProject = (project: IProject) => {
     setSelectedProject(project);
     setIsModalOpen(true);
   };
 
-  const handleDeleteProject = (projectId: number) => {
+  const handleDeleteProject = async (projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      setProjects(projects.filter(p => p.id !== projectId));
+      try {
+        // Update UI state immediately
+        setProjects(prevProjects => prevProjects.filter(project => project._id !== projectId));
+        
+        // Make API call
+        await projectApi.delete(projectId);
+        toast({
+          title: "Success",
+          description: "Project deleted successfully"
+        });
+      } catch (error) {
+        // Revert UI state on error
+        fetchProjects(currentPage);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to delete project",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const handleSaveProject = (projectData: Omit<Project, 'id'>) => {
-    if (selectedProject) {
-      // Edit existing project
-      setProjects(projects.map(p => 
-        p.id === selectedProject.id 
-          ? { ...projectData, id: selectedProject.id }
-          : p
-      ));
-    } else {
-      // Add new project
-      const newProject = {
-        ...projectData,
-        id: Math.max(0, ...projects.map(p => p.id)) + 1
-      };
-      setProjects([...projects, newProject]);
+  const handleSaveProject = async (projectData: any) => {
+    try {
+      if (selectedProject) {
+        // Edit existing project
+        await projectApi.update(selectedProject._id, projectData);
+        toast({
+          title: "Success",
+          description: "Project updated successfully"
+        });
+      } else {
+        // Add new project
+        await projectApi.create(projectData);
+        toast({
+          title: "Success",
+          description: "Project created successfully"
+        });
+      }
+      setIsModalOpen(false);
+      fetchProjects(currentPage);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save project",
+        variant: "destructive"
+      });
     }
   };
 
@@ -104,62 +115,16 @@ const Projects: React.FC = () => {
 
   const formatBudgetVariance = (variance: number) => {
     const prefix = variance <= 0 ? 'Under budget: ' : 'Over budget: ';
-    return `${prefix}$${Math.abs(variance).toLocaleString()}`;
+    return `${prefix}PKR ${Math.abs(variance).toLocaleString()}`;
   };
 
-  // Add this new effect to update project budgets when phases change
-  useEffect(() => {
-    const updateProjectWithPhaseData = async (projectId: number) => {
-      try {
-        // Fetch phases for this project
-        const response = await fetch(`/api/projects/${projectId}/phases`);
-        const phases = await response.json();
-        
-        // Calculate totals
-        const totals = phases.reduce((acc: any, phase: any) => ({
-          estimatedBudget: acc.estimatedBudget + phase.estimatedBudget,
-          actualCost: acc.actualCost + phase.actualCost,
-          completion: acc.completion + phase.completion,
-          phaseCount: acc.phaseCount + 1,
-          taskCount: acc.taskCount + phase.taskCount
-        }), {
-          estimatedBudget: 0,
-          actualCost: 0,
-          completion: 0,
-          phaseCount: 0,
-          taskCount: 0
-        });
-
-        // Calculate average completion
-        totals.completion = Math.round(totals.completion / totals.phaseCount);
-        
-        // Calculate budget variance
-        totals.budgetVariance = totals.actualCost - totals.estimatedBudget;
-
-        // Update the project with new totals
-        setProjects(prevProjects => 
-          prevProjects.map(p => 
-            p.id === projectId
-              ? {
-                  ...p,
-                  estimatedBudget: totals.estimatedBudget,
-                  actualCost: totals.actualCost,
-                  budgetVariance: totals.budgetVariance,
-                  completion: totals.completion,
-                  phaseCount: totals.phaseCount,
-                  taskCount: totals.taskCount
-                }
-              : p
-          )
-        );
-      } catch (error) {
-        console.error('Error updating project totals:', error);
-      }
-    };
-
-    // Update all projects
-    projects.forEach(project => updateProjectWithPhaseData(project.id));
-  }, []); // Run once on component mount
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -175,7 +140,7 @@ const Projects: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <Card key={project.id} className="flex flex-col">
+          <Card key={project._id} className="flex flex-col">
             <CardHeader className="pb-2 text-center">
               <CardTitle className="text-xl font-bold">{project.name}</CardTitle>
             </CardHeader>
@@ -184,11 +149,11 @@ const Projects: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Estimated Budget:</span>
-                    <span className="font-medium">${project.estimatedBudget.toLocaleString()}</span>
+                    <span className="font-medium">PKR {project.estimatedBudget.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Actual Cost:</span>
-                    <span className="font-medium">${project.actualCost.toLocaleString()}</span>
+                    <span className="font-medium">PKR {project.actualCost.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Budget Status:</span>
@@ -237,6 +202,13 @@ const Projects: React.FC = () => {
                   <span>Budget variance exceeds threshold</span>
                 </div>
               )}
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => navigate(`/projects/${project._id}/phases`)}
+              >
+                View Phases
+              </Button>
               <div className="flex gap-2 w-full">
                 <Button
                   variant="outline"
@@ -251,30 +223,46 @@ const Projects: React.FC = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDeleteProject(project.id)}
+                  onClick={() => handleDeleteProject(project._id)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
               </div>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => navigate(`/projects/${project.id}/phases`)}
-              >
-                View Phases
-              </Button>
             </CardFooter>
           </Card>
         ))}
       </div>
 
-      <ProjectModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveProject}
-        project={selectedProject}
-      />
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          <Button
+            variant="outline"
+            onClick={() => fetchProjects(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <span className="py-2 px-4">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => fetchProjects(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+
+      {isModalOpen && (
+        <ProjectModal
+          project={selectedProject}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveProject}
+        />
+      )}
     </div>
   );
 };

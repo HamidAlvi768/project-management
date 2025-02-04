@@ -1,196 +1,192 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import FormDialog from './ui/form-dialog';
-
-interface Task {
-  id: number;
-  name: string;
-  estimatedCost: number;
-  startDate: string;
-  endDate: string;
-  status: 'pending' | 'in-progress' | 'completed';
-  description: string;
-  type: 'construction' | 'procurement' | 'inspection';
-  assignedTo: string;
-}
+import { ITask, ITaskInput } from '../services/types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 interface TaskModalProps {
-  isOpen: boolean;
+  task?: ITask | null;
+  projectId: string;
+  phaseId: string;
   onClose: () => void;
-  onSave: (task: Omit<Task, 'id'>) => void;
-  task?: Task | null;
+  onSave: (data: ITaskInput) => void;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-  task
-}) => {
-  const [formData, setFormData] = useState<Omit<Task, 'id'>>({
-    name: '',
-    estimatedCost: 0,
-    startDate: '',
-    endDate: '',
-    status: 'pending',
-    description: '',
-    type: 'construction',
-    assignedTo: ''
+const taskSchema = z.object({
+  name: z.string().min(1, 'Task name is required').max(100, 'Task name cannot be more than 100 characters'),
+  description: z.string().min(1, 'Description is required').max(500, 'Description cannot be more than 500 characters'),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().min(1, 'End date is required'),
+  status: z.enum(['pending', 'in-progress', 'completed'] as const),
+  type: z.enum(['construction', 'procurement', 'inspection'] as const),
+  estimatedCost: z.number().min(0, 'Estimated cost must be positive'),
+  assignedTo: z.string().min(1, 'Assigned person is required')
+});
+
+const TaskModal: React.FC<TaskModalProps> = ({ task, projectId, phaseId, onClose, onSave }) => {
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ITaskInput>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: task ? {
+      name: task.name,
+      description: task.description,
+      startDate: task.startDate.split('T')[0],
+      endDate: task.endDate.split('T')[0],
+      status: task.status,
+      type: task.type,
+      estimatedCost: task.estimatedCost,
+      assignedTo: task.assignedTo
+    } : {
+      status: 'pending',
+      type: 'construction',
+      estimatedCost: 0
+    }
   });
 
-  useEffect(() => {
-    if (task) {
-      setFormData(task);
-    } else {
-      setFormData({
-        name: '',
-        estimatedCost: 0,
-        startDate: '',
-        endDate: '',
-        status: 'pending',
-        description: '',
-        type: 'construction',
-        assignedTo: ''
-      });
-    }
-  }, [task]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
+  const onSubmit = (data: ITaskInput) => {
+    onSave(data);
   };
 
   return (
-    <FormDialog 
-      isOpen={isOpen} 
-      onClose={onClose}
-      title={task ? 'Edit Task' : 'Add New Task'}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Task Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="estimatedCost">Estimated Cost ($)</Label>
-          <Input
-            id="estimatedCost"
-            type="number"
-            value={formData.estimatedCost}
-            onChange={(e) => setFormData({ ...formData, estimatedCost: Number(e.target.value) })}
-            required
-            min="0"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>{task ? 'Edit Task' : 'Create Task'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="startDate">Start Date</Label>
+            <Label htmlFor="name">Task Name</Label>
             <Input
-              id="startDate"
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              required
+              id="name"
+              {...register('name')}
+              placeholder="Enter task name"
             />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                onValueChange={(value) => setValue('status', value)}
+                defaultValue={task?.status || 'pending'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="text-sm text-red-500">{errors.status.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <Select
+                onValueChange={(value) => setValue('type', value)}
+                defaultValue={task?.type || 'construction'}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="construction">Construction</SelectItem>
+                  <SelectItem value="procurement">Procurement</SelectItem>
+                  <SelectItem value="inspection">Inspection</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.type && (
+                <p className="text-sm text-red-500">{errors.type.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <Input
+                id="startDate"
+                type="date"
+                {...register('startDate')}
+              />
+              {errors.startDate && (
+                <p className="text-sm text-red-500">{errors.startDate.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endDate">End Date</Label>
+              <Input
+                id="endDate"
+                type="date"
+                {...register('endDate')}
+              />
+              {errors.endDate && (
+                <p className="text-sm text-red-500">{errors.endDate.message}</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="endDate">End Date</Label>
+            <Label htmlFor="estimatedCost">Estimated Cost</Label>
             <Input
-              id="endDate"
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              required
+              id="estimatedCost"
+              type="number"
+              {...register('estimatedCost', { valueAsNumber: true })}
+              placeholder="Enter estimated cost"
             />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => setFormData({ ...formData, status: value as Task['status'] })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+            {errors.estimatedCost && (
+              <p className="text-sm text-red-500">{errors.estimatedCost.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value) => setFormData({ ...formData, type: value as Task['type'] })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="construction">Construction</SelectItem>
-                <SelectItem value="procurement">Procurement</SelectItem>
-                <SelectItem value="inspection">Inspection</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="assignedTo">Assigned To</Label>
+            <Input
+              id="assignedTo"
+              {...register('assignedTo')}
+              placeholder="Enter assignee name"
+            />
+            {errors.assignedTo && (
+              <p className="text-sm text-red-500">{errors.assignedTo.message}</p>
+            )}
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="assignedTo">Assigned To</Label>
-          <Input
-            id="assignedTo"
-            value={formData.assignedTo}
-            onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-            required
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              {...register('description')}
+              placeholder="Enter task description"
+            />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description.message}</p>
+            )}
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            required
-          />
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            onClick={onClose}
-            variant="default"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="default"
-          >
-            {task ? 'Save Changes' : 'Create Task'}
-          </Button>
-        </div>
-      </form>
-    </FormDialog>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">
+              {task ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IProject } from './Project';
-
-// Phase status type
-export type PhaseStatus = 'not-started' | 'in-progress' | 'completed';
+import { PhaseStatus, PHASE_STATUS, PHASE_STATUS_VALUES } from '../types/phase.types';
 
 // Phase document interface
 export interface IPhase extends Document {
@@ -59,8 +57,11 @@ const PhaseSchema = new Schema<IPhase>(
     },
     status: {
       type: String,
-      enum: ['not-started', 'in-progress', 'completed'],
-      default: 'not-started',
+      enum: {
+        values: PHASE_STATUS_VALUES,
+        message: 'Invalid phase status'
+      },
+      default: PHASE_STATUS.NOT_STARTED,
     },
     description: {
       type: String,

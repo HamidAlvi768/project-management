@@ -1,299 +1,287 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, ArrowLeft, TrendingUp, AlertTriangle, PieChart } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import PhaseModal from '../components/PhaseModal';
-import PhaseCard from '../components/PhaseCard';
-import { Button } from '../components/ui/button';
+import { Plus, Pencil, Trash2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageTitle } from '../components/ui/page-title';
-
-interface Phase {
-  id: number;
-  name: string;
-  estimatedBudget: number;
-  actualCost: number;
-  startDate: string;
-  endDate: string;
-  status: 'not-started' | 'in-progress' | 'completed';
-  description: string;
-  completion: number;
-  taskCount: number;
-  budgetVariance: number;
-  laborCost: number;
-  materialCost: number;
-  equipmentCost: number;
-  dependencies: number[]; // IDs of phases that must be completed before this one
-}
-
-interface ProjectSummary {
-  totalBudget: number;
-  totalActualCost: number;
-  totalVariance: number;
-  overallCompletion: number;
-  phaseCount: number;
-  totalTaskCount: number;
-}
+import PhaseModal from '../components/PhaseModal';
+import { phaseApi, projectApi } from '../services/api';
+import { IPhase, IPhaseInput, IProject } from '../services/types';
+import { toast } from '../components/ui/use-toast';
 
 const Phases: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
 
-  const [projectName, setProjectName] = useState<string>("");
-
-  useEffect(() => {
-    const project = [
-      { id: 1, name: "Commercial Complex Alpha" },
-      { id: 2, name: "Residential Towers Beta" }
-    ].find(p => p.id === Number(projectId));
-    
-    if (project) {
-      setProjectName(project.name);
-    }
-  }, [projectId]);
-
-  const [phases, setPhases] = useState<Phase[]>([
-    {
-      id: 1,
-      name: "Foundation Work",
-      estimatedBudget: 250000,
-      actualCost: 260000,
-      startDate: "2024-02-01",
-      endDate: "2024-03-15",
-      status: "in-progress",
-      description: "Excavation and foundation laying for the main building",
-      completion: 75,
-      taskCount: 12,
-      budgetVariance: 10000,
-      laborCost: 100000,
-      materialCost: 140000,
-      equipmentCost: 20000,
-      dependencies: []
-    },
-    {
-      id: 2,
-      name: "Structural Framework",
-      estimatedBudget: 500000,
-      actualCost: 480000,
-      startDate: "2024-03-16",
-      endDate: "2024-05-30",
-      status: "not-started",
-      description: "Construction of main structural framework and support systems",
-      completion: 0,
-      taskCount: 18,
-      budgetVariance: -20000,
-      laborCost: 200000,
-      materialCost: 250000,
-      equipmentCost: 30000,
-      dependencies: [1]
-    }
-  ]);
-
-  const [projectSummary, setProjectSummary] = useState<ProjectSummary>({
-    totalBudget: 0,
-    totalActualCost: 0,
-    totalVariance: 0,
-    overallCompletion: 0,
-    phaseCount: 0,
-    totalTaskCount: 0
-  });
-
-  useEffect(() => {
-    // Calculate project summary from phases
-    const summary = phases.reduce((acc, phase) => ({
-      totalBudget: acc.totalBudget + phase.estimatedBudget,
-      totalActualCost: acc.totalActualCost + phase.actualCost,
-      totalVariance: acc.totalVariance + phase.budgetVariance,
-      overallCompletion: acc.overallCompletion + phase.completion,
-      phaseCount: acc.phaseCount + 1,
-      totalTaskCount: acc.totalTaskCount + phase.taskCount
-    }), {
-      totalBudget: 0,
-      totalActualCost: 0,
-      totalVariance: 0,
-      overallCompletion: 0,
-      phaseCount: 0,
-      totalTaskCount: 0
-    });
-
-    // Calculate average completion
-    summary.overallCompletion = Math.round(summary.overallCompletion / summary.phaseCount);
-
-    setProjectSummary(summary);
-  }, [phases]);
-
+  const [phases, setPhases] = useState<IPhase[]>([]);
+  const [project, setProject] = useState<IProject | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
-  const [isProjectDetailsOpen, setIsProjectDetailsOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<IPhase | null>(null);
 
-  const getStatusColor = (status: Phase['status']) => {
-    switch (status) {
-      case 'not-started':
-        return 'bg-gray-100 text-gray-800';
-      case 'in-progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  // Fetch project and phases
+  const fetchData = async () => {
+    if (!projectId) return;
+    
+    try {
+      setIsLoading(true);
+      const [projectResponse, phasesResponse] = await Promise.all([
+        projectApi.getOne(projectId),
+        phaseApi.getAllForProject(projectId)
+      ]);
+      setProject(projectResponse.data);
+      setPhases(phasesResponse.data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [projectId]);
 
   const handleAddPhase = () => {
     setSelectedPhase(null);
     setIsModalOpen(true);
   };
 
-  const handleEditPhase = (phase: Phase) => {
+  const handleEditPhase = (phase: IPhase) => {
     setSelectedPhase(phase);
     setIsModalOpen(true);
   };
 
-  const handleDeletePhase = (phaseId: number) => {
+  const handleDeletePhase = async (phaseId: string) => {
+    if (!projectId) return;
+    
     if (window.confirm('Are you sure you want to delete this phase?')) {
-      setPhases(phases.filter(p => p.id !== phaseId));
+      try {
+        await phaseApi.delete(projectId, phaseId);
+        // Update local state immediately
+        setPhases(prevPhases => prevPhases.filter(phase => phase._id !== phaseId));
+        toast({
+          title: "Success",
+          description: "Phase deleted successfully"
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to delete phase",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const handleSavePhase = (phaseData: Omit<Phase, 'id' | 'taskCount' | 'budgetVariance'>) => {
-    if (selectedPhase) {
-      // Edit existing phase
-      setPhases(phases.map(p => 
-        p.id === selectedPhase.id 
-          ? { 
-              ...phaseData, 
-              id: selectedPhase.id,
-              taskCount: selectedPhase.taskCount,
-              budgetVariance: phaseData.actualCost - phaseData.estimatedBudget
-            }
-          : p
-      ));
-    } else {
-      // Add new phase
-      const newPhase = {
-        ...phaseData,
-        id: Math.max(0, ...phases.map(p => p.id)) + 1,
-        taskCount: 0,
-        budgetVariance: phaseData.actualCost - phaseData.estimatedBudget
-      };
-      setPhases([...phases, newPhase]);
+  const handleSavePhase = async (data: IPhaseInput) => {
+    if (!projectId) return;
+    
+    try {
+      if (selectedPhase) {
+        // Edit existing phase
+        await phaseApi.update(projectId, selectedPhase._id, data);
+        toast({
+          title: "Success",
+          description: "Phase updated successfully"
+        });
+      } else {
+        // Add new phase
+        await phaseApi.create(projectId, data);
+        toast({
+          title: "Success",
+          description: "Phase created successfully"
+        });
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save phase",
+        variant: "destructive"
+      });
     }
   };
 
   const getBudgetStatusColor = (variance: number) => {
     if (variance <= 0) return 'text-green-600';
-    if (variance < 25000) return 'text-yellow-600';
+    if (variance < 50000) return 'text-yellow-600';
     return 'text-red-600';
   };
 
   const formatBudgetVariance = (variance: number) => {
     const prefix = variance <= 0 ? 'Under budget: ' : 'Over budget: ';
-    return `${prefix}$${Math.abs(variance).toLocaleString()}`;
+    return `${prefix}PKR ${Math.abs(variance).toLocaleString()}`;
   };
 
-  const calculateCostBreakdown = (phase: Phase) => {
-    const total = phase.laborCost + phase.materialCost + phase.equipmentCost;
-    return {
-      labor: Math.round((phase.laborCost / total) * 100),
-      material: Math.round((phase.materialCost / total) * 100),
-      equipment: Math.round((phase.equipmentCost / total) * 100)
-    };
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">Project not found</h1>
+        <Button onClick={() => navigate('/projects')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Projects
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <PageTitle
-        title={`${projectName} Phases`}
+        title={`Phases - ${project.name}`}
         leftContent={
-          <p className="text-sm text-muted-foreground">Project ID: {projectId}</p>
+          <Button variant="outline" onClick={() => navigate('/projects')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Projects
+          </Button>
         }
         rightContent={
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => setIsProjectDetailsOpen(true)}
-            >
-              <PieChart className="h-4 w-4" />
-              Project Details
-            </Button>
-            <Button onClick={handleAddPhase} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Phase
-            </Button>
-          </div>
+          <Button onClick={handleAddPhase} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Phase
+          </Button>
         }
       />
 
-      {/* Project Details Modal */}
-      <Dialog open={isProjectDetailsOpen} onOpenChange={setIsProjectDetailsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Project Details</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-x-24 gap-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Budget:</span>
-                  <span className="font-medium w-[180px] text-right">${projectSummary.totalBudget.toLocaleString()}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {phases.map((phase) => (
+          <Card key={phase._id} className="flex flex-col">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl font-bold">{phase.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Estimated Budget:</span>
+                    <span className="font-medium">PKR {phase.estimatedBudget.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Actual Cost:</span>
+                    <span className="font-medium">PKR {phase.actualCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Budget Status:</span>
+                    <span className={`font-medium ${getBudgetStatusColor(phase.budgetVariance)}`}>
+                      {formatBudgetVariance(phase.budgetVariance)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Timeline:</span>
+                    <span className="font-medium">
+                      {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Status:</span>
+                    <Badge variant="outline" className={
+                      phase.status === 'in-progress' ? 'bg-green-100 text-green-800 border-green-200' :
+                      phase.status === 'completed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                      phase.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                      phase.status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                      'bg-gray-100 text-gray-800 border-gray-200'
+                    }>
+                      {phase.status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Completion</span>
+                      <span className="font-medium">{phase.completion}%</span>
+                    </div>
+                    <Progress value={phase.completion} className="h-2" />
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Actual Cost:</span>
-                  <span className="font-medium w-[180px] text-right">${projectSummary.totalActualCost.toLocaleString()}</span>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">{phase.description}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tasks: {phase.taskCount}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Overall Variance:</span>
-                  <div className={`font-medium w-[180px] text-right ${getBudgetStatusColor(projectSummary.totalVariance)}`}>
-                    ${Math.abs(projectSummary.totalVariance).toLocaleString()}
-                    <div className="text-xs text-muted-foreground">
-                      {projectSummary.totalVariance <= 0 ? 'Under budget' : 'Over budget'}
+
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Labor</span>
+                      <span className="text-sm font-medium">PKR {phase.laborCost.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Material</span>
+                      <span className="text-sm font-medium">PKR {phase.materialCost.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Equipment</span>
+                      <span className="text-sm font-medium">PKR {phase.equipmentCost.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Phases:</span>
-                  <span className="font-medium">{projectSummary.phaseCount}</span>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+              {phase.budgetVariance > 50000 && (
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Budget variance exceeds threshold</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Tasks:</span>
-                  <span className="font-medium">{projectSummary.totalTaskCount}</span>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Overall Progress</span>
-                    <span className="font-medium">{projectSummary.overallCompletion}%</span>
-                  </div>
-                  <Progress value={projectSummary.overallCompletion} className="h-2" />
-                </div>
+              )}
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  onClick={() => handleEditPhase(phase)}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleDeletePhase(phase._id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
               </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {phases.map((phase) => (
-          <PhaseCard
-            key={phase.id}
-            phase={phase}
-            onEdit={handleEditPhase}
-            onDelete={handleDeletePhase}
-            onViewTasks={(id) => navigate(`/projects/${projectId}/phases/${id}/tasks`)}
-          />
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => navigate(`/projects/${projectId}/phases/${phase._id}/tasks`)}
+              >
+                View Tasks
+              </Button>
+            </CardFooter>
+          </Card>
         ))}
       </div>
 
-      <PhaseModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSavePhase}
-        phase={selectedPhase}
-      />
+      {isModalOpen && (
+        <PhaseModal
+          phase={selectedPhase}
+          projectId={projectId!}
+          availableDependencies={phases.map(p => ({ _id: p._id, name: p.name }))}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSavePhase}
+        />
+      )}
     </div>
   );
 };

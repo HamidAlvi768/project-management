@@ -127,6 +127,9 @@ router.route('/')
   })), projectController.getAll)
   .post(validate(projectValidation.create), projectController.create);
 
+// Stats route should come before parameterized routes
+router.get('/stats', projectController.getStats);
+
 router.route('/:id')
   .get(validate(checkSchema({
     id: {
@@ -158,7 +161,5 @@ router.get('/:id/timeline', validate(checkSchema({
     errorMessage: 'Invalid project ID'
   }
 })), projectController.getTimeline);
-
-router.get('/stats', projectController.getStats);
 
 export default router; 

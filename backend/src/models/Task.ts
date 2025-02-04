@@ -1,11 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IPhase } from './Phase';
-
-// Task status type
-export type TaskStatus = 'pending' | 'in-progress' | 'completed';
-
-// Task type
-export type TaskType = 'construction' | 'procurement' | 'inspection';
+import { TaskStatus, TaskType, TASK_STATUS, TASK_TYPE, TASK_STATUS_VALUES, TASK_TYPE_VALUES } from '../types/task.types';
 
 // Task document interface
 export interface ITask extends Document {
@@ -51,8 +46,11 @@ const TaskSchema = new Schema<ITask>(
     },
     status: {
       type: String,
-      enum: ['pending', 'in-progress', 'completed'],
-      default: 'pending',
+      enum: {
+        values: TASK_STATUS_VALUES,
+        message: 'Invalid task status'
+      },
+      default: TASK_STATUS.PENDING,
     },
     description: {
       type: String,
@@ -62,7 +60,10 @@ const TaskSchema = new Schema<ITask>(
     },
     type: {
       type: String,
-      enum: ['construction', 'procurement', 'inspection'],
+      enum: {
+        values: TASK_TYPE_VALUES,
+        message: 'Invalid task type'
+      },
       required: [true, 'Task type is required'],
     },
     assignedTo: {
