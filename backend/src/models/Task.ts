@@ -1,6 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IPhase } from './Phase';
-import { TaskStatus, TaskType, TASK_STATUS, TASK_TYPE, TASK_STATUS_VALUES, TASK_TYPE_VALUES } from '../types/task.types';
+
+export enum TaskStatus {
+  NOT_STARTED = 'not-started',
+  PENDING = 'pending',
+  IN_PROGRESS = 'in-progress',
+  COMPLETED = 'completed'
+}
+
+export enum TaskType {
+  CONSTRUCTION = 'construction',
+  PROCUREMENT = 'procurement',
+  INSPECTION = 'inspection'
+}
 
 // Task document interface
 export interface ITask extends Document {
@@ -46,11 +58,8 @@ const TaskSchema = new Schema<ITask>(
     },
     status: {
       type: String,
-      enum: {
-        values: TASK_STATUS_VALUES,
-        message: 'Invalid task status'
-      },
-      default: TASK_STATUS.PENDING,
+      enum: Object.values(TaskStatus),
+      default: TaskStatus.NOT_STARTED,
     },
     description: {
       type: String,
@@ -60,10 +69,7 @@ const TaskSchema = new Schema<ITask>(
     },
     type: {
       type: String,
-      enum: {
-        values: TASK_TYPE_VALUES,
-        message: 'Invalid task type'
-      },
+      enum: Object.values(TaskType),
       required: [true, 'Task type is required'],
     },
     assignedTo: {
@@ -79,6 +85,7 @@ const TaskSchema = new Schema<ITask>(
 
 // Ensure end date is after start date
 TaskSchema.pre('save', function(next) {
+  console.log('Pre-save middleware triggered');
   if (this.endDate < this.startDate) {
     next(new Error('End date must be after start date'));
   }
@@ -87,22 +94,51 @@ TaskSchema.pre('save', function(next) {
 
 // Update phase task count on task changes
 TaskSchema.post('save', async function() {
-  const Phase = mongoose.model('Phase');
-  const taskCount = await mongoose.model('Task').countDocuments({ phase: this.phase });
-  
-  // Calculate phase completion based on completed tasks
-  const tasks = await mongoose.model('Task').find({ phase: this.phase });
-  const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const completion = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
-  
-  await Phase.findByIdAndUpdate(this.phase, {
-    taskCount,
-    completion,
+  console.log('\n=== Phase Completion Calculation Debug ===');
+  console.log('Post-save middleware triggered');
+  console.log('Triggered by Task:', {
+    taskId: this._id,
+    taskName: this.name,
+    taskStatus: this.status,
+    phaseId: this.phase
   });
+
+  try {
+    const Phase = mongoose.model('Phase');
+    const taskCount = await mongoose.model('Task').countDocuments({ phase: this.phase });
+    console.log('Total Task Count:', taskCount);
+    
+    // Calculate phase completion based on completed tasks
+    const tasks = await mongoose.model('Task').find({ phase: this.phase });
+    console.log('All Tasks in Phase:', tasks.map(task => ({
+      id: task._id,
+      name: task.name,
+      status: task.status
+    })));
+    
+    const completedTasks = tasks.filter(task => task.status === TaskStatus.COMPLETED).length;
+    const completion = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+    
+    console.log('Completion Calculation:', {
+      totalTasks: tasks.length,
+      completedTasks,
+      completionPercentage: completion
+    });
+    
+    await Phase.findByIdAndUpdate(this.phase, {
+      taskCount,
+      completion,
+    });
+    console.log('Phase Updated with completion:', completion);
+  } catch (error) {
+    console.error('Error in post-save hook:', error);
+  }
+  console.log('=====================================\n');
 });
 
 // Update costs in phase based on task type
 TaskSchema.post('save', async function() {
+  console.log('Post-save middleware triggered for cost update');
   const Phase = mongoose.model('Phase');
   const tasks = await mongoose.model('Task').find({ phase: this.phase });
   
@@ -122,6 +158,7 @@ TaskSchema.post('save', async function() {
   }, { laborCost: 0, materialCost: 0, equipmentCost: 0 });
   
   await Phase.findByIdAndUpdate(this.phase, costs);
+  console.log('Phase Updated with costs:', costs);
 });
 
 export default mongoose.model<ITask>('Task', TaskSchema); 

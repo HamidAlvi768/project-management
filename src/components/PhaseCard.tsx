@@ -1,11 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { DollarSign } from 'lucide-react';
 import { Pencil, Trash2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface Phase {
   id: number;
@@ -19,10 +17,6 @@ interface Phase {
   completion: number;
   taskCount: number;
   budgetVariance: number;
-  laborCost: number;
-  materialCost: number;
-  equipmentCost: number;
-  dependencies: number[];
 }
 
 interface PhaseCardProps {
@@ -47,15 +41,6 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
   const formatBudgetVariance = (variance: number) => {
     const prefix = variance <= 0 ? 'Under budget: ' : 'Over budget: ';
     return `${prefix}$${Math.abs(variance).toLocaleString()}`;
-  };
-
-  const calculateCostBreakdown = () => {
-    const total = phase.laborCost + phase.materialCost + phase.equipmentCost;
-    return {
-      labor: Math.round((phase.laborCost / total) * 100),
-      material: Math.round((phase.materialCost / total) * 100),
-      equipment: Math.round((phase.equipmentCost / total) * 100)
-    };
   };
 
   return (
@@ -90,62 +75,9 @@ const PhaseCard: React.FC<PhaseCardProps> = ({
             </div>
           </div>
 
-          {/* Details Section - Always Visible */}
+          {/* Details Section */}
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">{phase.description}</div>
-
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Cost Breakdown</h4>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1">
-                  <div className="h-2 bg-blue-100 rounded-full">
-                    <div 
-                      className="h-full bg-blue-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${calculateCostBreakdown().labor}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Labor</span>
-                    <span className="font-medium">${phase.laborCost.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="h-2 bg-green-100 rounded-full">
-                    <div 
-                      className="h-full bg-green-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${calculateCostBreakdown().material}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Material</span>
-                    <span className="font-medium">${phase.materialCost.toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="h-2 bg-orange-100 rounded-full">
-                    <div 
-                      className="h-full bg-orange-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${calculateCostBreakdown().equipment}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Equipment</span>
-                    <span className="font-medium">${phase.equipmentCost.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {phase.dependencies.length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium">Dependencies</h4>
-                <div className="flex gap-2">
-                  {phase.dependencies.map(depId => (
-                    <Badge key={depId} variant="secondary">Phase {depId}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </CardContent>

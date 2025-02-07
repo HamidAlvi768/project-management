@@ -4,6 +4,7 @@ import { ProjectStatus, PROJECT_STATUS, PROJECT_STATUS_VALUES } from '../types/p
 // Project document interface
 export interface IProject extends Document {
   name: string;
+  customer: Schema.Types.ObjectId;
   estimatedBudget: number;
   actualCost: number;
   startDate: Date;
@@ -27,6 +28,11 @@ const ProjectSchema = new Schema<IProject>(
       required: [true, 'Project name is required'],
       trim: true,
       maxlength: [100, 'Project name cannot be more than 100 characters'],
+    },
+    customer: {
+      type: Schema.Types.ObjectId,
+      ref: 'Customer',
+      required: [true, 'Customer is required'],
     },
     estimatedBudget: {
       type: Number,

@@ -1,12 +1,24 @@
 import { Request, Response } from 'express';
 import { catchAsync } from '../middleware/error';
 import Project from '../models/Project';
+import Customer from '../models/Customer';
 import { AppError } from '../middleware/error';
 
 export const projectController = {
   // Create a new project
   create: catchAsync(async (req: Request, res: Response) => {
     const project = await Project.create(req.body);
+    
+    // Update customer's projects array
+    await Customer.findByIdAndUpdate(
+      req.body.customer,
+      { $addToSet: { projects: project._id } }
+    );
+
+    // Log the updated customer for debugging
+    const updatedCustomer = await Customer.findById(req.body.customer);
+    console.log('Updated Customer after project creation:', updatedCustomer);
+
     res.status(201).json({
       status: 'success',
       data: project,
@@ -42,7 +54,7 @@ export const projectController = {
 
     // Execute query with pagination
     const [projects, total] = await Promise.all([
-      query.skip(skip).limit(limit),
+      query.skip(skip).limit(limit).populate('customer', 'name'),
       Project.countDocuments(query.getFilter()),
     ]);
 
@@ -61,7 +73,9 @@ export const projectController = {
 
   // Get a single project by ID with phases
   getOne: catchAsync(async (req: Request, res: Response) => {
-    const project = await Project.findById(req.params.id).populate('phases');
+    const project = await Project.findById(req.params.id)
+      .populate('phases')
+      .populate('customer', 'name');
 
     if (!project) {
       throw new AppError('Project not found', 404);
@@ -75,6 +89,26 @@ export const projectController = {
 
   // Update a project
   update: catchAsync(async (req: Request, res: Response) => {
+    const oldProject = await Project.findById(req.params.id);
+    if (!oldProject) {
+      throw new AppError('Project not found', 404);
+    }
+
+    // If customer is being changed
+    if (req.body.customer && req.body.customer !== oldProject.customer.toString()) {
+      // Remove project from old customer's projects array
+      await Customer.findByIdAndUpdate(
+        oldProject.customer,
+        { $pull: { projects: oldProject._id } }
+      );
+
+      // Add project to new customer's projects array
+      await Customer.findByIdAndUpdate(
+        req.body.customer,
+        { $addToSet: { projects: oldProject._id } }
+      );
+    }
+
     const project = await Project.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -82,25 +116,33 @@ export const projectController = {
         new: true,
         runValidators: true,
       }
-    );
-
-    if (!project) {
-      throw new AppError('Project not found', 404);
-    }
+    ).populate('customer', 'name');
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       data: project,
+      message: 'Project updated successfully'
     });
   }),
 
   // Delete a project
   delete: catchAsync(async (req: Request, res: Response) => {
-    const project = await Project.findByIdAndDelete(req.params.id);
-
+    const project = await Project.findById(req.params.id);
     if (!project) {
       throw new AppError('Project not found', 404);
     }
+
+    // Remove project from customer's projects array
+    await Customer.findByIdAndUpdate(
+      project.customer,
+      { $pull: { projects: project._id } }
+    );
+
+    // Log the updated customer for debugging
+    const updatedCustomer = await Customer.findById(project.customer);
+    console.log('Updated Customer after project deletion:', updatedCustomer);
+
+    await project.deleteOne();
 
     res.status(204).json({
       status: 'success',

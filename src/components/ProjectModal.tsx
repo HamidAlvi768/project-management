@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IProject, IProjectInput, ProjectStatus } from '../services/types';
+import { IProject, IProjectInput, ProjectStatus, ICustomer } from '../services/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { CalendarIcon } from "lucide-react";
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchCustomers, setSelectedCustomer, loadFromLocalStorage } from '../store/slices/customerSlice';
+import { RootState } from '../store/store';
 
 interface ProjectModalProps {
   project?: IProject | null;
@@ -20,6 +24,8 @@ const projectSchema = z.object({
   name: z.string()
     .min(1, 'Project name is required')
     .max(100, 'Project name cannot be more than 100 characters'),
+  customer: z.string()
+    .min(1, 'Customer is required'),
   estimatedBudget: z.number()
     .min(0, 'Budget must be positive'),
   startDate: z.string()
@@ -35,10 +41,14 @@ const projectSchema = z.object({
 });
 
 const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave }) => {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<IProjectInput>({
+  const dispatch = useAppDispatch();
+  const { customers, selectedCustomer, isLoading } = useAppSelector((state: RootState) => state.customer);
+  
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<IProjectInput>({
     resolver: zodResolver(projectSchema),
     defaultValues: project ? {
       name: project.name,
+      customer: project.customer,
       estimatedBudget: project.estimatedBudget,
       startDate: project.startDate.split('T')[0],
       endDate: project.endDate.split('T')[0],
@@ -51,8 +61,50 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
     }
   });
 
+  const selectedCustomerId = watch('customer');
+
+  console.log('Form Values:', watch());
+  console.log('Selected Customer ID:', selectedCustomerId);
+  console.log('Customers State:', customers);
+  console.log('Project Props:', project);
+  console.log('Selected Customer State:', selectedCustomer);
+
+  useEffect(() => {
+    // Load from localStorage first
+    dispatch(loadFromLocalStorage());
+    // Then fetch fresh data
+    dispatch(fetchCustomers());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (project?.customer) {
+      setValue('customer', project.customer);
+      const initialCustomer = customers.find((c: ICustomer) => c._id === project.customer);
+      if (initialCustomer) {
+        dispatch(setSelectedCustomer(initialCustomer));
+      }
+    }
+  }, [project, customers, setValue, dispatch]);
+
+  useEffect(() => {
+    if (!isLoading && selectedCustomerId && customers.length > 0) {
+      const customer = customers.find((c: ICustomer) => c._id === selectedCustomerId);
+      if (customer) {
+        dispatch(setSelectedCustomer(customer));
+      }
+    }
+  }, [selectedCustomerId, customers, isLoading, dispatch]);
+
   const onSubmit = (data: IProjectInput) => {
     onSave(data);
+  };
+
+  // For the date picker issue, let's create a type-safe helper
+  const showDatePicker = (elementId: string) => {
+    const element = document.getElementById(elementId) as HTMLInputElement;
+    if (element?.showPicker) {
+      element.showPicker();
+    }
   };
 
   return (
@@ -78,6 +130,38 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="customer">Customer</Label>
+            <Select
+              onValueChange={(value: string) => {
+                console.log('Select onValueChange:', value);
+                setValue('customer', value);
+              }}
+              value={selectedCustomerId}
+              disabled={isLoading}
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {isLoading && project?.customer
+                    ? "Loading..."
+                    : selectedCustomer
+                      ? selectedCustomer.name
+                      : "Select customer"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map((customer) => (
+                  <SelectItem key={customer._id} value={customer._id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.customer && (
+              <p className="text-sm text-red-500">{errors.customer.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="estimatedBudget">Estimated Budget</Label>
             <Input
               id="estimatedBudget"
@@ -93,11 +177,18 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                {...register('startDate')}
-              />
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => showDatePicker('startDate')}
+              >
+                <Input
+                  id="startDate"
+                  type="date"
+                  {...register('startDate')}
+                  className="pl-8 cursor-pointer"
+                />
+                <CalendarIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              </div>
               {errors.startDate && (
                 <p className="text-sm text-red-500">{errors.startDate.message}</p>
               )}
@@ -105,11 +196,18 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
 
             <div className="space-y-2">
               <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                {...register('endDate')}
-              />
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => showDatePicker('endDate')}
+              >
+                <Input
+                  id="endDate"
+                  type="date"
+                  {...register('endDate')}
+                  className="pl-8 cursor-pointer"
+                />
+                <CalendarIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              </div>
               {errors.endDate && (
                 <p className="text-sm text-red-500">{errors.endDate.message}</p>
               )}

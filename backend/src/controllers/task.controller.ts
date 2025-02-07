@@ -92,22 +92,29 @@ export const taskController = {
 
   // Update a task
   update: catchAsync(async (req: Request, res: Response) => {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    console.log('Task Update Request:', {
+      taskId: req.params.id,
+      updateData: req.body
+    });
 
+    // First find the task
+    const task = await Task.findById(req.params.id);
+    
     if (!task) {
       throw new AppError('Task not found', 404);
     }
 
+    // Update task fields
+    Object.assign(task, req.body);
+    
+    // Save to trigger middleware
+    console.log('Saving task to trigger hooks...');
+    const updatedTask = await task.save();
+    console.log('Task saved successfully');
+
     res.status(200).json({
       status: 'success',
-      data: task,
+      data: updatedTask,
     });
   }),
 

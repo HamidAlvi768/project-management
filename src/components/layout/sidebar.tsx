@@ -17,7 +17,9 @@ import {
   Layers,
   CheckSquare,
   Users,
-  Calendar
+  Calendar,
+  UserSquare2,
+  Package
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -140,6 +142,21 @@ export function Sidebar({ className }: SidebarProps) {
           </h2>
           <div className="space-y-1">
             <Button
+              variant={isActive("/customers") ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-start",
+                isActive("/customers")
+                  ? "bg-secondary hover:bg-secondary/80"
+                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
+              )}
+              asChild
+            >
+              <Link to="/customers">
+                <UserSquare2 className="mr-2 h-4 w-4" />
+                Customers
+              </Link>
+            </Button>
+            <Button
               variant={isActive("/projects") ? "secondary" : "ghost"}
               className={cn(
                 "w-full justify-start",
@@ -152,6 +169,21 @@ export function Sidebar({ className }: SidebarProps) {
               <Link to="/projects">
                 <Building2 className="mr-2 h-4 w-4" />
                 Projects
+              </Link>
+            </Button>
+            <Button
+              variant={isActive("/inventory") ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-start",
+                isActive("/inventory")
+                  ? "bg-secondary hover:bg-secondary/80"
+                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
+              )}
+              asChild
+            >
+              <Link to="/inventory">
+                <Package className="mr-2 h-4 w-4" />
+                Inventory
               </Link>
             </Button>
             <Button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Pencil, Trash2, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowLeft, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,51 +10,68 @@ import PhaseModal from '../components/PhaseModal';
 import { phaseApi, projectApi } from '../services/api';
 import { IPhase, IPhaseInput, IProject } from '../services/types';
 import { toast } from '../components/ui/use-toast';
+import { useToast } from "@/components/ui/use-toast";
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchPhases, createPhase, updatePhase, deletePhase, setSelectedPhase } from '@/store/slices/phaseSlice';
+import { RootState } from '@/store/store';
 
 const Phases: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-
-  const [phases, setPhases] = useState<IPhase[]>([]);
-  const [project, setProject] = useState<IProject | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { phases, selectedPhase, isLoading, error } = useAppSelector((state: RootState) => state.phase);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<IPhase | null>(null);
+  const { toast } = useToast();
 
-  // Fetch project and phases
-  const fetchData = async () => {
-    if (!projectId) return;
-    
-    try {
-      setIsLoading(true);
-      const [projectResponse, phasesResponse] = await Promise.all([
-        projectApi.getOne(projectId),
-        phaseApi.getAllForProject(projectId)
-      ]);
-      setProject(projectResponse.data);
-      setPhases(phasesResponse.data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch data",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [project, setProject] = useState<IProject | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [projectId]);
+    if (projectId) {
+      console.log('Fetching phases for project:', projectId);
+      dispatch(fetchPhases(projectId))
+        .unwrap()
+        .then((response) => {
+          console.log('Phases fetched successfully:', response);
+        })
+        .catch((error) => {
+          console.error('Error fetching phases:', error);
+          toast({
+            title: "Error",
+            description: error.message || "Failed to load phases",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [dispatch, projectId, toast]);
+
+  useEffect(() => {
+    if (projectId) {
+      projectApi.getOne(projectId)
+        .then(response => {
+          setProject(response.data);
+        })
+        .catch(error => {
+          toast({
+            title: "Error",
+            description: "Failed to load project",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [projectId, toast]);
+
+  // Log state changes
+  useEffect(() => {
+    console.log('Current phases state:', { phases, isLoading, error });
+  }, [phases, isLoading, error]);
 
   const handleAddPhase = () => {
-    setSelectedPhase(null);
+    dispatch(setSelectedPhase(null));
     setIsModalOpen(true);
   };
 
   const handleEditPhase = (phase: IPhase) => {
-    setSelectedPhase(phase);
+    dispatch(setSelectedPhase(phase));
     setIsModalOpen(true);
   };
 
@@ -63,18 +80,17 @@ const Phases: React.FC = () => {
     
     if (window.confirm('Are you sure you want to delete this phase?')) {
       try {
-        await phaseApi.delete(projectId, phaseId);
-        // Update local state immediately
-        setPhases(prevPhases => prevPhases.filter(phase => phase._id !== phaseId));
+        await dispatch(deletePhase({ projectId, phaseId })).unwrap();
         toast({
           title: "Success",
-          description: "Phase deleted successfully"
+          description: "Phase deleted successfully",
         });
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Error deleting phase:', error);
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "Failed to delete phase",
-          variant: "destructive"
+          description: error.message || "Failed to delete phase",
+          variant: "destructive",
         });
       }
     }
@@ -82,30 +98,33 @@ const Phases: React.FC = () => {
 
   const handleSavePhase = async (data: IPhaseInput) => {
     if (!projectId) return;
-    
+
     try {
       if (selectedPhase) {
-        // Edit existing phase
-        await phaseApi.update(projectId, selectedPhase._id, data);
+        await dispatch(updatePhase({
+          projectId,
+          phaseId: selectedPhase._id,
+          data
+        })).unwrap();
         toast({
           title: "Success",
-          description: "Phase updated successfully"
+          description: "Phase updated successfully",
         });
       } else {
-        // Add new phase
-        await phaseApi.create(projectId, data);
+        await dispatch(createPhase({ projectId, data })).unwrap();
         toast({
           title: "Success",
-          description: "Phase created successfully"
+          description: "Phase created successfully",
         });
       }
       setIsModalOpen(false);
-      fetchData();
-    } catch (error) {
+      dispatch(setSelectedPhase(null));
+    } catch (error: any) {
+      console.error('Error saving phase:', error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save phase",
-        variant: "destructive"
+        description: error.message || "Failed to save phase",
+        variant: "destructive",
       });
     }
   };
@@ -123,8 +142,16 @@ const Phases: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-6 text-red-500">
+        Error loading phases: {error}
       </div>
     );
   }
@@ -159,126 +186,137 @@ const Phases: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {phases.map((phase) => (
-          <Card key={phase._id} className="flex flex-col">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold">{phase.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Estimated Budget:</span>
-                    <span className="font-medium">PKR {phase.estimatedBudget.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Actual Cost:</span>
-                    <span className="font-medium">PKR {phase.actualCost.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Budget Status:</span>
-                    <span className={`font-medium ${getBudgetStatusColor(phase.budgetVariance)}`}>
-                      {formatBudgetVariance(phase.budgetVariance)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Timeline:</span>
-                    <span className="font-medium">
-                      {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Status:</span>
-                    <Badge variant="outline" className={
-                      phase.status === 'in-progress' ? 'bg-green-100 text-green-800 border-green-200' :
-                      phase.status === 'completed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                      phase.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                      phase.status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                      'bg-gray-100 text-gray-800 border-gray-200'
-                    }>
-                      {phase.status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
+      {phases.length === 0 ? (
+        <div className="text-center py-6 text-gray-500">
+          No phases found. Click "Add Phase" to create one.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {phases.map((phase) => (
+            <Card key={phase._id} className="flex flex-col">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-bold">{phase.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Estimated Budget:</span>
+                      <span className="font-medium">PKR {phase.estimatedBudget.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Actual Cost:</span>
+                      <span className="font-medium">PKR {phase.actualCost.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Budget Status:</span>
+                      <span className={`font-medium ${getBudgetStatusColor(phase.budgetVariance)}`}>
+                        {formatBudgetVariance(phase.budgetVariance)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Timeline:</span>
+                      <span className="font-medium">
+                        {new Date(phase.startDate).toLocaleDateString()} - {new Date(phase.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <Badge variant="outline" className={
+                        phase.status === 'in-progress' ? 'bg-green-100 text-green-800 border-green-200' :
+                        phase.status === 'completed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        phase.status === 'on-hold' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                        phase.status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      }>
+                        {phase.status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Completion</span>
+                        <span className="font-medium">{phase.completion}%</span>
+                      </div>
+                      <Progress value={phase.completion} className="h-2" />
+                    </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Completion</span>
-                      <span className="font-medium">{phase.completion}%</span>
+                      <span className="text-muted-foreground">Tasks</span>
+                      <span className="font-medium">{phase.taskCount}</span>
                     </div>
-                    <Progress value={phase.completion} className="h-2" />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{phase.description}</p>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tasks: {phase.taskCount}</span>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{phase.description}</p>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Labor</span>
-                      <span className="text-sm font-medium">PKR {phase.laborCost.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Material</span>
-                      <span className="text-sm font-medium">PKR {phase.materialCost.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Equipment</span>
-                      <span className="text-sm font-medium">PKR {phase.equipmentCost.toLocaleString()}</span>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Labor</span>
+                        <span className="text-sm font-medium">PKR {phase.laborCost.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Material</span>
+                        <span className="text-sm font-medium">PKR {phase.materialCost.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground block">Equipment</span>
+                        <span className="text-sm font-medium">PKR {phase.equipmentCost.toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              {phase.budgetVariance > 50000 && (
-                <div className="flex items-center gap-2 text-sm text-red-600">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Budget variance exceeds threshold</span>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                {phase.budgetVariance > 50000 && (
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>Budget variance exceeds threshold</span>
+                  </div>
+                )}
+                <div className="flex gap-2 w-full">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => handleEditPhase(phase)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeletePhase(phase._id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
-              )}
-              <div className="flex gap-2 w-full">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  onClick={() => handleEditPhase(phase)}
+                  variant="default"
+                  className="w-full"
+                  onClick={() => navigate(`/projects/${projectId}/phases/${phase._id}/tasks`)}
                 >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  View Tasks
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDeletePhase(phase._id)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-              <Button
-                variant="default"
-                className="w-full"
-                onClick={() => navigate(`/projects/${projectId}/phases/${phase._id}/tasks`)}
-              >
-                View Tasks
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {isModalOpen && (
         <PhaseModal
           phase={selectedPhase}
           projectId={projectId!}
           availableDependencies={phases.map(p => ({ _id: p._id, name: p.name }))}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            dispatch(setSelectedPhase(null));
+          }}
           onSave={handleSavePhase}
         />
       )}

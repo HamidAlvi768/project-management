@@ -9,6 +9,9 @@ import { errorHandler } from './middleware/error';
 import projectRoutes from './routes/project.routes';
 import phaseRoutes from './routes/phase.routes';
 import taskRoutes from './routes/task.routes';
+import customerRoutes from './routes/customer.routes';
+import inventoryRoutes from './routes/inventory.routes';
+import taskInventoryRoutes from './routes/taskInventory.routes';
 
 // Initialize express app
 const app = express();
@@ -24,9 +27,12 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // API Routes
+app.use('/api/customers', customerRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects/:projectId/phases', phaseRoutes);
 app.use('/api/phases/:phaseId/tasks', taskRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/tasks/:taskId/inventory', taskInventoryRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

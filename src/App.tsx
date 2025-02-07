@@ -5,6 +5,10 @@ import { Toaster } from 'sonner';
 import Projects from './pages/Projects';
 import Phases from './pages/Phases';
 import Tasks from './pages/Tasks';
+import Customers from './pages/Customers';
+import Inventory from './pages/Inventory';
+import { Provider } from 'react-redux';
+import { store } from './store/store';
 
 const user = {
   name: "John Smith",
@@ -17,10 +21,20 @@ function AppContent() {
   const location = useLocation();
   const getBreadcrumbs = () => {
     const path = location.pathname;
-    if (path === '/projects') {
+    if (path === '/customers') {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Customers" }
+      ];
+    } else if (path === '/projects') {
       return [
         { label: "Home", href: "/" },
         { label: "Projects" }
+      ];
+    } else if (path === '/inventory') {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Inventory" }
       ];
     } else if (path.includes('/phases')) {
       return [
@@ -45,8 +59,10 @@ function AppContent() {
       breadcrumbs={getBreadcrumbs()}
     >
       <Routes>
-        <Route path="/" element={<Navigate to="/projects" replace />} />
+        <Route path="/" element={<Navigate to="/customers" replace />} />
+        <Route path="/customers" element={<Customers />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/inventory" element={<Inventory />} />
         <Route path="/projects/:projectId/phases" element={<Phases />} />
         <Route path="/projects/:projectId/phases/:phaseId/tasks" element={<Tasks />} />
       </Routes>
@@ -56,10 +72,12 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-      <Toaster />
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <AppContent />
+        <Toaster />
+      </Router>
+    </Provider>
   );
 }
 

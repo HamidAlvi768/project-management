@@ -1,10 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IProject } from './Project';
-import { PhaseStatus, PHASE_STATUS, PHASE_STATUS_VALUES } from '../types/phase.types';
+import { PhaseStatus } from '../types/phase.types';
 
 // Phase document interface
 export interface IPhase extends Document {
-  project: IProject['_id'];
+  project: Schema.Types.ObjectId;
   name: string;
   estimatedBudget: number;
   actualCost: number;
@@ -15,10 +15,7 @@ export interface IPhase extends Document {
   completion: number;
   taskCount: number;
   budgetVariance: number;
-  laborCost: number;
-  materialCost: number;
-  equipmentCost: number;
-  dependencies: IPhase['_id'][];
+  dependencies: Schema.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,11 +54,8 @@ const PhaseSchema = new Schema<IPhase>(
     },
     status: {
       type: String,
-      enum: {
-        values: PHASE_STATUS_VALUES,
-        message: 'Invalid phase status'
-      },
-      default: PHASE_STATUS.NOT_STARTED,
+      enum: ['not-started', 'in-progress', 'completed', 'on-hold', 'cancelled'],
+      default: 'not-started',
     },
     description: {
       type: String,
@@ -84,24 +78,9 @@ const PhaseSchema = new Schema<IPhase>(
       type: Number,
       default: 0,
     },
-    laborCost: {
-      type: Number,
-      default: 0,
-      min: [0, 'Labor cost cannot be negative'],
-    },
-    materialCost: {
-      type: Number,
-      default: 0,
-      min: [0, 'Material cost cannot be negative'],
-    },
-    equipmentCost: {
-      type: Number,
-      default: 0,
-      min: [0, 'Equipment cost cannot be negative'],
-    },
     dependencies: [{
       type: Schema.Types.ObjectId,
-      ref: 'Phase',
+      ref: 'Phase'
     }],
   },
   {
@@ -118,9 +97,8 @@ PhaseSchema.virtual('tasks', {
   foreignField: 'phase',
 });
 
-// Pre-save middleware to calculate budget variance and actual cost
+// Pre-save middleware to calculate budget variance
 PhaseSchema.pre('save', function(next) {
-  this.actualCost = this.laborCost + this.materialCost + this.equipmentCost;
   this.budgetVariance = this.actualCost - this.estimatedBudget;
   next();
 });

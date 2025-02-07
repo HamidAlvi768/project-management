@@ -9,6 +9,7 @@ import { IPhase, IPhaseInput, PhaseStatus } from '../services/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { CalendarIcon } from "lucide-react";
 
 interface PhaseModalProps {
   phase?: IPhase | null;
@@ -19,16 +20,19 @@ interface PhaseModalProps {
 }
 
 const phaseSchema = z.object({
-  name: z.string().min(1, 'Phase name is required'),
-  estimatedBudget: z.number().min(0, 'Budget must be positive'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  name: z.string()
+    .min(1, 'Phase name is required')
+    .max(100, 'Phase name cannot be more than 100 characters'),
+  estimatedBudget: z.number()
+    .min(0, 'Estimated budget must be positive'),
+  startDate: z.string()
+    .min(1, 'Start date is required'),
+  endDate: z.string()
+    .min(1, 'End date is required'),
   status: z.enum(['not-started', 'in-progress', 'completed', 'on-hold', 'cancelled'] as const),
-  description: z.string().min(1, 'Description is required'),
-  laborCost: z.number().min(0, 'Labor cost must be positive').optional(),
-  materialCost: z.number().min(0, 'Material cost must be positive').optional(),
-  equipmentCost: z.number().min(0, 'Equipment cost must be positive').optional(),
-  dependencies: z.array(z.string()).optional()
+  description: z.string()
+    .min(1, 'Description is required')
+    .max(500, 'Description cannot be more than 500 characters'),
 });
 
 const PhaseModal: React.FC<PhaseModalProps> = ({ phase, projectId, availableDependencies, onClose, onSave }) => {
@@ -41,13 +45,8 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ phase, projectId, availableDepe
       endDate: phase.endDate.split('T')[0],
       status: phase.status,
       description: phase.description,
-      laborCost: phase.laborCost,
-      materialCost: phase.materialCost,
-      equipmentCost: phase.equipmentCost,
-      dependencies: phase.dependencies
     } : {
       status: 'not-started' as PhaseStatus,
-      dependencies: []
     }
   });
 
@@ -116,11 +115,18 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ phase, projectId, availableDepe
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                {...register('startDate')}
-              />
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => document.getElementById('startDate')?.showPicker()}
+              >
+                <Input
+                  id="startDate"
+                  type="date"
+                  {...register('startDate')}
+                  className="pl-8 cursor-pointer"
+                />
+                <CalendarIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              </div>
               {errors.startDate && (
                 <p className="text-sm text-red-500">{errors.startDate.message}</p>
               )}
@@ -128,86 +134,21 @@ const PhaseModal: React.FC<PhaseModalProps> = ({ phase, projectId, availableDepe
 
             <div className="space-y-2">
               <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="date"
-                {...register('endDate')}
-              />
+              <div 
+                className="relative cursor-pointer" 
+                onClick={() => document.getElementById('endDate')?.showPicker()}
+              >
+                <Input
+                  id="endDate"
+                  type="date"
+                  {...register('endDate')}
+                  className="pl-8 cursor-pointer"
+                />
+                <CalendarIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+              </div>
               {errors.endDate && (
                 <p className="text-sm text-red-500">{errors.endDate.message}</p>
               )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="laborCost">Labor Cost</Label>
-              <Input
-                id="laborCost"
-                type="number"
-                {...register('laborCost', { valueAsNumber: true })}
-                placeholder="Enter labor cost"
-              />
-              {errors.laborCost && (
-                <p className="text-sm text-red-500">{errors.laborCost.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="materialCost">Material Cost</Label>
-              <Input
-                id="materialCost"
-                type="number"
-                {...register('materialCost', { valueAsNumber: true })}
-                placeholder="Enter material cost"
-              />
-              {errors.materialCost && (
-                <p className="text-sm text-red-500">{errors.materialCost.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="equipmentCost">Equipment Cost</Label>
-              <Input
-                id="equipmentCost"
-                type="number"
-                {...register('equipmentCost', { valueAsNumber: true })}
-                placeholder="Enter equipment cost"
-              />
-              {errors.equipmentCost && (
-                <p className="text-sm text-red-500">{errors.equipmentCost.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Dependencies</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {availableDependencies
-                .filter(dep => dep._id !== phase?._id) // Prevent self-dependency
-                .map(dep => (
-                  <label
-                    key={dep._id}
-                    className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50"
-                  >
-                    <input
-                      type="checkbox"
-                      value={dep._id}
-                      checked={selectedDependencies.includes(dep._id)}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const currentDeps = selectedDependencies;
-                        if (e.target.checked) {
-                          setValue('dependencies', [...currentDeps, value]);
-                        } else {
-                          setValue('dependencies', currentDeps.filter(id => id !== value));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm">{dep.name}</span>
-                  </label>
-                ))}
             </div>
           </div>
 

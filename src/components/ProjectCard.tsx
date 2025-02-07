@@ -17,8 +17,9 @@ import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 
 interface Project {
-  id: number;
+  _id: string;
   name: string;
+  customer: string | { _id: string; name: string };
   estimatedBudget: number;
   actualCost: number;
   startDate: string;
@@ -35,8 +36,8 @@ interface Project {
 interface ProjectCardProps {
   project: Project;
   onEdit: (project: Project) => void;
-  onDelete: (id: number) => void;
-  onViewPhases: (id: number) => void;
+  onDelete: (id: string) => void;
+  onViewPhases: (id: string) => void;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -57,6 +58,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   const formatBudgetVariance = (variance: number) => {
     const prefix = variance <= 0 ? 'Under budget: ' : 'Over budget: ';
     return `${prefix}$${Math.abs(variance).toLocaleString()}`;
+  };
+
+  const getCustomerName = (customer: string | { _id: string; name: string }) => {
+    return typeof customer === 'object' ? customer.name : customer;
   };
 
   return (
@@ -98,7 +103,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               variant="outline"
               size="icon"
               className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => onDelete(project.id)}
+              onClick={() => onDelete(project._id)}
             >
               <FiTrash2 className="h-4 w-4 stroke-2" />
             </Button>
@@ -192,7 +197,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <Button
           variant="secondary"
           className="w-full"
-          onClick={() => onViewPhases(project.id)}
+          onClick={() => onViewPhases(project._id)}
         >
           View Phases
         </Button>

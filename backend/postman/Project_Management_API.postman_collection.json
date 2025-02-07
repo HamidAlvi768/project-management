@@ -7,6 +7,103 @@
   },
   "item": [
     {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith\",\n  \"phoneNumber\": \"+1234567890\",\n  \"address\": \"123 Main St, City, Country\",\n  \"status\": \"new\",\n  \"email\": \"john@example.com\",\n  \"notes\": \"Important client for commercial projects\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["customers"]
+            }
+          }
+        },
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers",
+              "host": ["{{base_url}}"],
+              "path": ["customers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "new",
+                  "description": "Filter by status (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "description": "Search in name, email, or phone (optional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith Updated\",\n  \"phoneNumber\": \"+1234567890\",\n  \"address\": \"456 New St, City, Country\",\n  \"status\": \"contracted\",\n  \"email\": \"john.updated@example.com\",\n  \"notes\": \"Updated notes for the client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/customers/{{customer_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["customers", "{{customer_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Projects",
       "item": [
         {
@@ -406,6 +503,189 @@
               "raw": "{{base_url}}/phases/{{phase_id}}/tasks/stats/by-type",
               "host": ["{{base_url}}"],
               "path": ["phases", "{{phase_id}}", "tasks", "stats", "by-type"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get All Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory",
+              "host": ["{{base_url}}"],
+              "path": ["inventory"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search query",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Single Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/{{inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "{{inventory_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Inventory",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sample Inventory\",\n  \"description\": \"Sample inventory description\",\n  \"unit\": \"pieces\",\n  \"unitValue\": 100,\n  \"pricePerUnit\": 500,\n  \"customUnit\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory",
+              "host": ["{{base_url}}"],
+              "path": ["inventory"]
+            }
+          }
+        },
+        {
+          "name": "Update Inventory",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Inventory\",\n  \"description\": \"Updated inventory description\",\n  \"unitValue\": 150,\n  \"pricePerUnit\": 600\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/{{inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "{{inventory_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Inventory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inventory/{{inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["inventory", "{{inventory_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Task Inventory",
+      "item": [
+        {
+          "name": "Get Task Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/inventory",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "Add Inventory to Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task\": \"{{task_id}}\",\n  \"phase\": \"{{phase_id}}\",\n  \"project\": \"{{project_id}}\",\n  \"customer\": \"{{customer_id}}\",\n  \"inventory\": \"{{inventory_id}}\",\n  \"allocatedValue\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/inventory",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}", "inventory"]
+            }
+          }
+        },
+        {
+          "name": "Update Task Inventory",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allocatedValue\": 75\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/inventory/{{inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}", "inventory", "{{inventory_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Task Inventory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/inventory/{{inventory_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}", "inventory", "{{inventory_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Consumed Value",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"consumedValue\": 25\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}/inventory/{{inventory_id}}/consume",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}", "inventory", "{{inventory_id}}", "consume"]
             }
           }
         }
