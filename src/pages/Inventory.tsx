@@ -165,7 +165,7 @@ const Inventory: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Unit:</span>
                       <Badge variant="secondary">
-                        {item.customUnit || item.unit}
+                        {item.unit.name} ({item.unit.symbol})
                       </Badge>
                     </div>
                     <div className="flex justify-between">
@@ -182,7 +182,7 @@ const Inventory: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Remaining Value:</span>
-                      <span className="font-medium">{item.remainingValue} {item.customUnit || item.unit}</span>
+                      <span className="font-medium">{item.remainingValue} {item.unit.symbol}</span>
                     </div>
                   </div>
                 </div>

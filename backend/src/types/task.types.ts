@@ -1,4 +1,5 @@
 export const TASK_STATUS = {
+  NOT_STARTED: 'not-started',
   PENDING: 'pending',
   IN_PROGRESS: 'in-progress',
   COMPLETED: 'completed'

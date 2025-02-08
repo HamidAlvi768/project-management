@@ -1,18 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { IPhase } from './Phase';
-
-export enum TaskStatus {
-  NOT_STARTED = 'not-started',
-  PENDING = 'pending',
-  IN_PROGRESS = 'in-progress',
-  COMPLETED = 'completed'
-}
-
-export enum TaskType {
-  CONSTRUCTION = 'construction',
-  PROCUREMENT = 'procurement',
-  INSPECTION = 'inspection'
-}
+import { TaskStatus, TaskType, TASK_STATUS_VALUES, TASK_TYPE_VALUES } from '../types/task.types';
 
 // Task document interface
 export interface ITask extends Document {
@@ -24,7 +12,6 @@ export interface ITask extends Document {
   status: TaskStatus;
   description: string;
   type: TaskType;
-  assignedTo: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,8 +45,8 @@ const TaskSchema = new Schema<ITask>(
     },
     status: {
       type: String,
-      enum: Object.values(TaskStatus),
-      default: TaskStatus.NOT_STARTED,
+      enum: TASK_STATUS_VALUES,
+      default: 'not-started',
     },
     description: {
       type: String,
@@ -69,13 +56,8 @@ const TaskSchema = new Schema<ITask>(
     },
     type: {
       type: String,
-      enum: Object.values(TaskType),
+      enum: TASK_TYPE_VALUES,
       required: [true, 'Task type is required'],
-    },
-    assignedTo: {
-      type: String,
-      required: [true, 'Task must be assigned to someone'],
-      trim: true,
     },
   },
   {

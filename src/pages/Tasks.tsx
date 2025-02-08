@@ -8,13 +8,14 @@ import { PageTitle } from '../components/ui/page-title';
 import TaskModal from '../components/TaskModal';
 import TaskInventoryList from '../components/TaskInventoryList';
 import TaskInventoryModal from '../components/TaskInventoryModal';
+import InventoryModal from '../components/InventoryModal';
 import { taskApi, phaseApi, projectApi } from '../services/api';
-import { ITask, ITaskInput, IPhase, IProject, ITaskInventoryInput } from '../services/types';
+import { ITask, ITaskInput, IPhase, IProject, ITaskInventoryInput, IInventoryInput } from '../services/types';
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTasks, createTask, updateTask, deleteTask, setSelectedTask } from '@/store/slices/taskSlice';
-import { fetchTaskInventory, addInventoryToTask } from '@/store/slices/inventorySlice';
+import { fetchTaskInventory, addInventoryToTask, createInventory } from '@/store/slices/inventorySlice';
 import { RootState } from '@/store/store';
 
 // At the top of the file, add type guards
@@ -41,6 +42,7 @@ const Tasks: React.FC = () => {
   const [phase, setPhase] = useState<IPhase | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [isNewInventoryModalOpen, setIsNewInventoryModalOpen] = useState(false);
   const { toast } = useToast();
 
   const taskInventory = useAppSelector((state: RootState) => 
@@ -49,21 +51,25 @@ const Tasks: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!projectId || !phaseId) return;
+      if (!projectId || !phaseId) {
+        console.log('Missing projectId or phaseId:', { projectId, phaseId });
+        return;
+      }
       
       try {
+        console.log('Fetching data for:', { projectId, phaseId });
         const [projectResponse, phaseResponse] = await Promise.all([
           projectApi.getOne(projectId),
           phaseApi.getOne(projectId, phaseId)
         ]);
 
-        console.log('Project data:', projectResponse.data);
-        if (!projectResponse.data?.customer || typeof projectResponse.data.customer === 'object' && !projectResponse.data.customer._id) {
-          console.error('Project has no valid customer:', projectResponse.data);
-        }
+        console.log('API responses:', {
+          project: projectResponse.data,
+          phase: phaseResponse.data
+        });
 
-        setProject(projectResponse.data);
-        setPhase(phaseResponse.data);
+        setProject(projectResponse.data.data);
+        setPhase(phaseResponse.data.data);
 
         // Fetch tasks and inventory through Redux
         await Promise.all([
@@ -82,6 +88,11 @@ const Tasks: React.FC = () => {
 
     fetchData();
   }, [dispatch, projectId, phaseId, toast]);
+
+  // Add debug logs for state changes
+  useEffect(() => {
+    console.log('Project and phase state updated:', { project, phase });
+  }, [project, phase]);
 
   // Log state changes
   useEffect(() => {
@@ -186,6 +197,47 @@ const Tasks: React.FC = () => {
     }
   };
 
+  const handleAddNewInventory = async (data: IInventoryInput) => {
+    try {
+      // First create the inventory item
+      const newInventory = await dispatch(createInventory(data)).unwrap();
+      
+      // Then allocate it to the task
+      if (selectedTask && project) {
+        const taskInventoryData: ITaskInventoryInput = {
+          task: selectedTask._id,
+          phase: phaseId!,
+          project: projectId!,
+          customer: typeof project.customer === 'object' ? project.customer._id : project.customer,
+          inventory: newInventory._id,
+          allocatedValue: data.unitValue // Allocate the entire quantity by default
+        };
+        
+        await dispatch(addInventoryToTask({ 
+          taskId: selectedTask._id, 
+          data: taskInventoryData
+        })).unwrap();
+        
+        // Refresh the task inventory
+        await dispatch(fetchTaskInventory(selectedTask._id));
+      }
+      
+      setIsNewInventoryModalOpen(false);
+      dispatch(setSelectedTask(null));
+      toast({
+        title: "Success",
+        description: "Inventory created and allocated successfully",
+      });
+    } catch (error: any) {
+      console.error('Error creating and allocating inventory:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create and allocate inventory",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -228,8 +280,8 @@ const Tasks: React.FC = () => {
     return (
       <div className="container mx-auto py-6">
         <PageTitle
-          title="Task Management"
-          breadcrumb={
+          title={project && phase ? `Tasks - ${project.name} - ${phase.name}` : "Task Management"}
+          leftContent={
             <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Phases
@@ -253,8 +305,8 @@ const Tasks: React.FC = () => {
     return (
       <div className="container mx-auto py-6">
         <PageTitle
-          title="Task Management"
-          breadcrumb={
+          title={project && phase ? `Tasks - ${project.name} - ${phase.name}` : "Task Management"}
+          leftContent={
             <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Phases
@@ -277,8 +329,8 @@ const Tasks: React.FC = () => {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageTitle
-        title="Task Management"
-        breadcrumb={
+        title={project && phase ? `Tasks - ${project.name} - ${phase.name}` : "Task Management"}
+        leftContent={
           <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Phases
@@ -339,20 +391,34 @@ const Tasks: React.FC = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-between gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  console.log('Add Inventory clicked:', {
-                    selectedTask: task,
-                    project,
-                    projectCustomer: project?.customer
-                  });
-                  dispatch(setSelectedTask(task));
-                  setIsInventoryModalOpen(true);
-                }}>
-                  <Package className="h-4 w-4 mr-2" />
-                  Allocate Inventory
-                </Button>
-                <div className="flex gap-2">
+              <CardFooter className="flex flex-col gap-2 w-full">
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    console.log('Add New Inventory clicked:', {
+                      selectedTask: task,
+                      project,
+                      projectCustomer: project?.customer
+                    });
+                    dispatch(setSelectedTask(task));
+                    setIsNewInventoryModalOpen(true);
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    console.log('Allocate Inventory clicked:', {
+                      selectedTask: task,
+                      project,
+                      projectCustomer: project?.customer
+                    });
+                    dispatch(setSelectedTask(task));
+                    setIsInventoryModalOpen(true);
+                  }}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Allocate
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 w-full">
                   <Button variant="outline" size="sm" onClick={() => handleEditTask(task)}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit
@@ -366,6 +432,16 @@ const Tasks: React.FC = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {isNewInventoryModalOpen && (
+        <InventoryModal
+          onClose={() => {
+            setIsNewInventoryModalOpen(false);
+            dispatch(setSelectedTask(null));
+          }}
+          onSave={handleAddNewInventory}
+        />
       )}
 
       {isInventoryModalOpen && selectedTask && project && (

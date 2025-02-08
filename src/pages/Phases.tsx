@@ -46,11 +46,15 @@ const Phases: React.FC = () => {
 
   useEffect(() => {
     if (projectId) {
+      console.log('Fetching project with ID:', projectId);
       projectApi.getOne(projectId)
         .then(response => {
-          setProject(response.data);
+          console.log('Project API response:', response);
+          setProject(response.data.data);
+          console.log('Project state after update:', response.data.data);
         })
         .catch(error => {
+          console.error('Error loading project:', error);
           toast({
             title: "Error",
             description: "Failed to load project",
@@ -59,6 +63,11 @@ const Phases: React.FC = () => {
         });
     }
   }, [projectId, toast]);
+
+  // Add debug log for project state changes
+  useEffect(() => {
+    console.log('Current project state:', project);
+  }, [project]);
 
   // Log state changes
   useEffect(() => {
@@ -171,7 +180,7 @@ const Phases: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageTitle
-        title={`Phases - ${project.name}`}
+        title={project ? `Phases - ${project.name}` : "Phase Management"}
         leftContent={
           <Button variant="outline" onClick={() => navigate('/projects')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -247,23 +256,6 @@ const Phases: React.FC = () => {
 
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">{phase.description}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Labor</span>
-                        <span className="text-sm font-medium">PKR {phase.laborCost.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Material</span>
-                        <span className="text-sm font-medium">PKR {phase.materialCost.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Equipment</span>
-                        <span className="text-sm font-medium">PKR {phase.equipmentCost.toLocaleString()}</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </CardContent>

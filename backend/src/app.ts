@@ -12,6 +12,7 @@ import taskRoutes from './routes/task.routes';
 import customerRoutes from './routes/customer.routes';
 import inventoryRoutes from './routes/inventory.routes';
 import taskInventoryRoutes from './routes/taskInventory.routes';
+import customUnitRoutes from './routes/customUnit.routes';
 
 // Initialize express app
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/projects/:projectId/phases', phaseRoutes);
 app.use('/api/phases/:phaseId/tasks', taskRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/tasks/:taskId/inventory', taskInventoryRoutes);
+app.use('/api/custom-units', customUnitRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

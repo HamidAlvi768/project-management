@@ -48,7 +48,7 @@ const taskValidation = {
       in: ['body'] as Location[],
       isString: true,
       trim: true,
-      notEmpty: { errorMessage: 'Description is required' },
+      notEmpty: { errorMessage: 'Task description is required' },
     },
     type: {
       in: ['body'] as Location[],
@@ -61,12 +61,6 @@ const taskValidation = {
           return true;
         }
       }
-    },
-    assignedTo: {
-      in: ['body'] as Location[],
-      isString: true,
-      trim: true,
-      notEmpty: { errorMessage: 'Task must be assigned to someone' },
     }
   }),
   update: checkSchema({
@@ -127,12 +121,6 @@ const taskValidation = {
           return true;
         }
       }
-    },
-    assignedTo: {
-      in: ['body'] as Location[],
-      optional: true,
-      isString: true,
-      trim: true,
     }
   }),
   status: checkSchema({
@@ -147,14 +135,6 @@ const taskValidation = {
           return true;
         }
       }
-    }
-  }),
-  assignedTo: checkSchema({
-    assignedTo: {
-      in: ['body'] as Location[],
-      isString: true,
-      trim: true,
-      notEmpty: { errorMessage: 'Task must be assigned to someone' },
     }
   })
 };

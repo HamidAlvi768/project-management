@@ -135,7 +135,6 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
-
 /* FullCalendar Custom Styles */
 .custom-calendar {
   --fc-border-color: #e5e7eb;
@@ -201,3 +200,4 @@ button:focus-visible {
 .custom-calendar .fc-view-harness {
   @apply rounded-lg border border-gray-200;
 }
+

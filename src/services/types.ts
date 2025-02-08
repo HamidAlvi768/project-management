@@ -16,9 +16,6 @@ export type TaskType = 'construction' | 'procurement' | 'inspection';
 // Customer Status enum
 export type CustomerStatus = 'new' | 'contracted' | 'pending' | 'inactive';
 
-// Inventory Unit Type
-export type InventoryUnit = 'pieces' | 'kg' | 'liters' | 'meters' | 'square_meters' | 'cubic_meters' | 'custom';
-
 // Project interface
 export interface IProject {
   _id: string;
@@ -31,7 +28,6 @@ export interface IProject {
   status: ProjectStatus;
   description: string;
   completion: number;
-  stakeholders: string[];
   phaseCount: number;
   taskCount: number;
   budgetVariance: number;
@@ -48,7 +44,6 @@ export interface IProjectInput {
   endDate: string;
   status?: ProjectStatus;
   description: string;
-  stakeholders?: string[];
 }
 
 // Phase interface
@@ -92,7 +87,6 @@ export interface ITask {
   status: TaskStatus;
   description: string;
   type: TaskType;
-  assignedTo: string;
   inventory?: ITaskInventory[];
   createdAt: string;
   updatedAt: string;
@@ -107,7 +101,6 @@ export interface ITaskInput {
   status: TaskStatus;
   description: string;
   type: TaskType;
-  assignedTo: string;
 }
 
 // API Response interface
@@ -193,12 +186,11 @@ export interface IInventory {
   _id: string;
   name: string;
   description: string;
-  unit: InventoryUnit;
+  unit: { _id: string; name: string; symbol: string };
   unitValue: number;
   pricePerUnit: number;
   totalPrice: number;
   remainingValue: number;
-  customUnit?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -207,10 +199,9 @@ export interface IInventory {
 export interface IInventoryInput {
   name: string;
   description: string;
-  unit: InventoryUnit;
+  unit: string;  // custom unit ID
   unitValue: number;
   pricePerUnit: number;
-  customUnit?: string;
 }
 
 // Task Inventory interface
@@ -236,4 +227,21 @@ export interface ITaskInventoryInput {
   customer: string;
   inventory: string; // inventory ID
   allocatedValue: number;
+}
+
+export interface ICustomUnit {
+  _id: string;
+  name: string;
+  symbol: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ICustomUnitInput {
+  name: string;
+  symbol: string;
+  description?: string;
+  isActive?: boolean;
 } 

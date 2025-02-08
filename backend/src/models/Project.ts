@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { ProjectStatus, PROJECT_STATUS, PROJECT_STATUS_VALUES } from '../types/project.types';
+import { ProjectStatus, PROJECT_STATUS_VALUES } from '../types/project.types';
 
 // Project document interface
 export interface IProject extends Document {
@@ -12,7 +12,6 @@ export interface IProject extends Document {
   status: ProjectStatus;
   description: string;
   completion: number;
-  stakeholders: string[];
   phaseCount: number;
   taskCount: number;
   budgetVariance: number;
@@ -54,11 +53,8 @@ const ProjectSchema = new Schema<IProject>(
     },
     status: {
       type: String,
-      enum: {
-        values: PROJECT_STATUS_VALUES,
-        message: 'Invalid project status'
-      },
-      default: PROJECT_STATUS.ONGOING,
+      enum: PROJECT_STATUS_VALUES,
+      default: 'not-started',
     },
     description: {
       type: String,
@@ -72,10 +68,6 @@ const ProjectSchema = new Schema<IProject>(
       min: [0, 'Completion percentage cannot be less than 0'],
       max: [100, 'Completion percentage cannot be more than 100'],
     },
-    stakeholders: [{
-      type: String,
-      trim: true,
-    }],
     phaseCount: {
       type: Number,
       default: 0,

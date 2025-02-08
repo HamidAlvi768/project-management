@@ -49,11 +49,6 @@ const projectValidation = {
       isString: true,
       trim: true,
       notEmpty: { errorMessage: 'Description is required' },
-    },
-    stakeholders: {
-      in: ['body'] as Location[],
-      optional: true,
-      isArray: true,
     }
   }),
   update: {
@@ -100,11 +95,6 @@ const projectValidation = {
       optional: true,
       isString: true,
       trim: true,
-    },
-    stakeholders: {
-      in: ['body'] as Location[],
-      optional: true,
-      isArray: true,
     }
   }
 };

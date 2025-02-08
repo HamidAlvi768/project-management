@@ -28,7 +28,8 @@
               "host": ["{{base_url}}"],
               "path": ["customers"]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get All Customers",
@@ -118,14 +119,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Commercial Complex Alpha\",\n  \"estimatedBudget\": 1500000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-12-31\",\n  \"status\": \"ongoing\",\n  \"description\": \"A 10-story commercial building with underground parking\",\n  \"stakeholders\": [\"John Architect\", \"Sarah Engineer\", \"Mike Contractor\"]\n}"
+              "raw": "{\n  \"name\": \"Commercial Complex Alpha\",\n  \"customer\": \"{{customer_id}}\",\n  \"estimatedBudget\": 1500000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-12-31\",\n  \"status\": \"not-started\",\n  \"description\": \"A 10-story commercial building with underground parking\",\n  \"stakeholders\": [\"John Architect\", \"Sarah Engineer\", \"Mike Contractor\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/projects",
               "host": ["{{base_url}}"],
               "path": ["projects"]
             }
-          }
+          },
+          "description": "Required fields:\n- name (string, max 100 chars)\n- customer (ObjectId)\n- estimatedBudget (number, >= 0)\n- startDate (Date)\n- endDate (Date, must be after startDate)\n- description (string, max 500 chars)\n\nOptional fields:\n- status (string, enum: not-started, ongoing, completed, on-hold, cancelled)\n- stakeholders (string[])\n- completion (number, 0-100)\n\nNote: Create a customer first and use its ID in the customer field."
         },
         {
           "name": "Get All Projects",
@@ -238,14 +240,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Foundation Work\",\n  \"estimatedBudget\": 250000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-03-15\",\n  \"status\": \"in-progress\",\n  \"description\": \"Excavation and foundation laying for the main building\",\n  \"laborCost\": 100000,\n  \"materialCost\": 140000,\n  \"equipmentCost\": 20000,\n  \"dependencies\": []\n}"
+              "raw": "{\n  \"name\": \"Foundation Work\",\n  \"estimatedBudget\": 250000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-03-15\",\n  \"status\": \"not-started\",\n  \"description\": \"Excavation and foundation laying for the main building\",\n  \"dependencies\": []\n}"
             },
             "url": {
               "raw": "{{base_url}}/projects/{{project_id}}/phases",
               "host": ["{{base_url}}"],
               "path": ["projects", "{{project_id}}", "phases"]
             }
-          }
+          },
+          "description": "Required fields:\n- name (string, max 100 chars)\n- estimatedBudget (number, >= 0)\n- startDate (Date)\n- endDate (Date, must be after startDate)\n- description (string, max 500 chars)\n\nOptional fields:\n- status (string, enum: not-started, in-progress, completed, on-hold, cancelled)\n- dependencies (array of Phase IDs)\n- completion (number, 0-100)\n- laborCost (number, >= 0)\n- materialCost (number, >= 0)\n- equipmentCost (number, >= 0)\n\nNote: The project_id is taken from the URL path."
         },
         {
           "name": "Get All Phases",
@@ -368,14 +371,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Foundation Excavation\",\n  \"estimatedCost\": 75000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-02-15\",\n  \"status\": \"in-progress\",\n  \"description\": \"Excavation of foundation area according to architectural plans\",\n  \"type\": \"construction\",\n  \"assignedTo\": \"John Construction Team\"\n}"
+              "raw": "{\n  \"name\": \"Site Excavation\",\n  \"phase\": \"{{phase_id}}\",\n  \"estimatedCost\": 50000,\n  \"startDate\": \"2024-02-01\",\n  \"endDate\": \"2024-02-15\",\n  \"status\": \"not-started\",\n  \"description\": \"Excavation work for foundation\",\n  \"type\": \"construction\",\n  \"assignedTo\": [\"Site Engineer\", \"Equipment Operator\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/phases/{{phase_id}}/tasks",
               "host": ["{{base_url}}"],
               "path": ["phases", "{{phase_id}}", "tasks"]
             }
-          }
+          },
+          "description": "Required fields:\n- name (string, max 100 chars)\n- phase (ObjectId)\n- estimatedCost (number, >= 0)\n- startDate (Date)\n- endDate (Date, must be after startDate)\n- description (string, max 500 chars)\n- type (string, enum: construction, procurement, inspection)\n\nOptional fields:\n- status (string, enum: not-started, in-progress, completed, on-hold, cancelled)\n- assignedTo (string[])\n\nNote: The phase_id is taken from the URL path."
         },
         {
           "name": "Get All Tasks",
@@ -686,6 +690,103 @@
               "raw": "{{base_url}}/tasks/{{task_id}}/inventory/{{inventory_id}}/consume",
               "host": ["{{base_url}}"],
               "path": ["tasks", "{{task_id}}", "inventory", "{{inventory_id}}", "consume"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Custom Units",
+      "item": [
+        {
+          "name": "Get All Custom Units",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "meter",
+                  "description": "Search in name, symbol, or description (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "description": "Filter by active status (optional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Custom Unit by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Custom Unit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Square Feet\",\n  \"symbol\": \"sq ft\",\n  \"description\": \"Standard unit for measuring floor area\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/custom-units",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units"]
+            }
+          }
+        },
+        {
+          "name": "Update Custom Unit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Square Feet Updated\",\n  \"symbol\": \"sq ft\",\n  \"description\": \"Updated description for square feet unit\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Custom Unit",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
             }
           }
         }

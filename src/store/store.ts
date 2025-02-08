@@ -4,6 +4,7 @@ import projectReducer from './slices/projectSlice';
 import phaseReducer from './slices/phaseSlice';
 import taskReducer from './slices/taskSlice';
 import inventoryReducer from './slices/inventorySlice';
+import customUnitReducer from './slices/customUnitSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     phase: phaseReducer,
     task: taskReducer,
     inventory: inventoryReducer,
+    customUnit: customUnitReducer,
   },
 });
 

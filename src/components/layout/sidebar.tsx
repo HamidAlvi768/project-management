@@ -19,7 +19,9 @@ import {
   Users,
   Calendar,
   UserSquare2,
-  Package
+  Package,
+  Users2,
+  Ruler
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -36,88 +38,31 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   {
-    icon: <LayoutDashboard className="h-5 w-5" />,
-    label: "Dashboard",
-    href: "/",
+    icon: <Users2 className="h-4 w-4" />,
+    label: "Customers",
+    href: "/customers",
   },
   {
-    icon: <CreditCard className="h-5 w-5" />,
-    label: "Accounts",
-    href: "/accounts",
+    icon: <Building2 className="h-4 w-4" />,
+    label: "Projects",
+    href: "/projects",
   },
   {
-    icon: <ArrowUpRight className="h-5 w-5" />,
-    label: "Incomes",
-    href: "/incomes",
+    icon: <Package className="h-4 w-4" />,
+    label: "Inventory",
+    href: "/inventory",
   },
   {
-    icon: <ArrowDownRight className="h-5 w-5" />,
-    label: "Expenses",
-    href: "/expenses",
-  },
-  {
-    icon: <ArrowLeftRight className="h-5 w-5" />,
-    label: "Transfers",
-    href: "/transfers",
-  },
-  {
-    icon: <PiggyBank className="h-5 w-5" />,
-    label: "Budgets",
-    href: "/budgets",
-  },
-  {
-    icon: <Building2 className="h-5 w-5" />,
-    label: "Bank Statements",
-    href: "/bank-statements",
-  },
-  {
-    icon: <FileText className="h-5 w-5" />,
-    label: "Reports",
-    href: "/reports",
-    children: [
-      {
-        icon: <ArrowLeftRight className="h-5 w-5" />,
-        label: "Transfer Reports",
-        href: "/reports/transfers",
-      },
-      {
-        icon: <ArrowUpRight className="h-5 w-5" />,
-        label: "Income Reports",
-        href: "/reports/incomes",
-      },
-      {
-        icon: <ArrowDownRight className="h-5 w-5" />,
-        label: "Expense Reports",
-        href: "/reports/expenses",
-      },
-    ],
-  },
-  {
-    icon: <Settings className="h-5 w-5" />,
-    label: "Dropdowns Settings",
+    icon: <Settings className="h-4 w-4" />,
+    label: "Settings",
     href: "/settings",
     children: [
       {
-        icon: <Tags className="h-5 w-5" />,
-        label: "Keywords",
-        href: "/settings/keywords",
-      },
-      {
-        icon: <Tags className="h-5 w-5" />,
-        label: "Settings Expense Category",
-        href: "/settings/expense-category",
-      },
-      {
-        icon: <Tags className="h-5 w-5" />,
-        label: "Settings Income Category",
-        href: "/settings/income-category",
-      },
-      {
-        icon: <Wallet className="h-5 w-5" />,
-        label: "Settings Account Type",
-        href: "/settings/account-type",
-      },
-    ],
+        icon: <Ruler className="h-4 w-4" />,
+        label: "Custom Units",
+        href: "/settings/custom-units",
+      }
+    ]
   }
 ]
 
@@ -141,81 +86,48 @@ export function Sidebar({ className }: SidebarProps) {
             Overview
           </h2>
           <div className="space-y-1">
-            <Button
-              variant={isActive("/customers") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/customers")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/customers">
-                <UserSquare2 className="mr-2 h-4 w-4" />
-                Customers
-              </Link>
-            </Button>
-            <Button
-              variant={isActive("/projects") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/projects")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/projects">
-                <Building2 className="mr-2 h-4 w-4" />
-                Projects
-              </Link>
-            </Button>
-            <Button
-              variant={isActive("/inventory") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/inventory")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/inventory">
-                <Package className="mr-2 h-4 w-4" />
-                Inventory
-              </Link>
-            </Button>
-            <Button
-              variant={isActive("/calendar") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/calendar")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/calendar">
-                <Calendar className="mr-2 h-4 w-4" />
-                Calendar
-              </Link>
-            </Button>
-            <Button
-              variant={isActive("/reports") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/reports")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/reports">
-                <FileText className="mr-2 h-4 w-4" />
-                Reports
-              </Link>
-            </Button>
+            {sidebarItems.map((item) => (
+              <React.Fragment key={item.href}>
+                <Button
+                  variant={isActive(item.href) ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start",
+                    isActive(item.href)
+                      ? "bg-secondary hover:bg-secondary/80"
+                      : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
+                  )}
+                  asChild
+                >
+                  <Link to={item.href}>
+                    {item.icon}
+                    <span className="ml-2">{item.label}</span>
+                    {item.children && <ChevronRight className="ml-auto h-4 w-4" />}
+                  </Link>
+                </Button>
+                {item.children && isActive(item.href) && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <Button
+                        key={child.href}
+                        variant={isActive(child.href) ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start",
+                          isActive(child.href)
+                            ? "bg-secondary hover:bg-secondary/80"
+                            : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
+                        )}
+                        asChild
+                      >
+                        <Link to={child.href}>
+                          {child.icon}
+                          <span className="ml-2">{child.label}</span>
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
         {showProjectManagement && (
@@ -243,7 +155,7 @@ export function Sidebar({ className }: SidebarProps) {
                 <Button
                   variant={isActive(`/projects/${currentProjectId}/phases/${phaseId}/tasks`) ? "secondary" : "ghost"}
                   className={cn(
-                    "w-full justify-start",
+                    "w-full justify-start ml-4",
                     isActive(`/projects/${currentProjectId}/phases/${phaseId}/tasks`)
                       ? "bg-secondary hover:bg-secondary/80"
                       : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
@@ -256,46 +168,9 @@ export function Sidebar({ className }: SidebarProps) {
                   </Link>
                 </Button>
               )}
-              <Button
-                variant={isActive("/teams") ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start",
-                  isActive("/teams")
-                    ? "bg-secondary hover:bg-secondary/80"
-                    : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-                )}
-                asChild
-              >
-                <Link to="/teams">
-                  <Users className="mr-2 h-4 w-4" />
-                  Teams
-                </Link>
-              </Button>
             </div>
           </div>
         )}
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-left">
-            Settings
-          </h2>
-          <div className="space-y-1">
-            <Button
-              variant={isActive("/settings") ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start",
-                isActive("/settings")
-                  ? "bg-secondary hover:bg-secondary/80"
-                  : "hover:bg-gray-100 hover:text-gray-900 text-gray-700"
-              )}
-              asChild
-            >
-              <Link to="/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                General Settings
-              </Link>
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );

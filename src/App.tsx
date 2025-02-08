@@ -7,6 +7,8 @@ import Phases from './pages/Phases';
 import Tasks from './pages/Tasks';
 import Customers from './pages/Customers';
 import Inventory from './pages/Inventory';
+import Settings from './pages/Settings';
+import CustomUnits from './pages/Settings/CustomUnits';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
 
@@ -36,6 +38,17 @@ function AppContent() {
         { label: "Home", href: "/" },
         { label: "Inventory" }
       ];
+    } else if (path === '/settings') {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Settings" }
+      ];
+    } else if (path === '/settings/custom-units') {
+      return [
+        { label: "Home", href: "/" },
+        { label: "Settings", href: "/settings" },
+        { label: "Custom Units" }
+      ];
     } else if (path.includes('/phases')) {
       return [
         { label: "Home", href: "/" },
@@ -63,6 +76,8 @@ function AppContent() {
         <Route path="/customers" element={<Customers />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/inventory" element={<Inventory />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/settings/custom-units" element={<CustomUnits />} />
         <Route path="/projects/:projectId/phases" element={<Phases />} />
         <Route path="/projects/:projectId/phases/:phaseId/tasks" element={<Tasks />} />
       </Routes>

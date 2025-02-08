@@ -1,24 +1,13 @@
-import { Schema, model, Document } from 'mongoose';
-
-export enum InventoryUnit {
-  PIECES = 'pieces',
-  KG = 'kg',
-  LITERS = 'liters',
-  METERS = 'meters',
-  SQUARE_METERS = 'square_meters',
-  CUBIC_METERS = 'cubic_meters',
-  CUSTOM = 'custom'
-}
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IInventory extends Document {
   name: string;
   description: string;
-  unit: InventoryUnit;
+  unit: Types.ObjectId;
   unitValue: number;
   pricePerUnit: number;
   totalPrice: number;
   remainingValue: number;
-  customUnit?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,14 +27,20 @@ const inventorySchema = new Schema<IInventory>(
       maxlength: [500, 'Description cannot be more than 500 characters'],
     },
     unit: {
-      type: String,
-      enum: Object.values(InventoryUnit),
+      type: Schema.Types.ObjectId,
+      ref: 'CustomUnit',
       required: [true, 'Unit is required'],
+      validate: {
+        validator: function(value: Types.ObjectId) {
+          return Types.ObjectId.isValid(value);
+        },
+        message: 'Invalid unit ID'
+      }
     },
     unitValue: {
       type: Number,
-      required: [true, 'Qunatity is required'],
-      min: [0, 'Qunatity cannot be negative'],
+      required: [true, 'Quantity is required'],
+      min: [0, 'Quantity cannot be negative'],
     },
     pricePerUnit: {
       type: Number,
@@ -62,16 +57,6 @@ const inventorySchema = new Schema<IInventory>(
         return this.unitValue;
       },
     },
-    customUnit: {
-      type: String,
-      trim: true,
-      validate: {
-        validator: function(this: IInventory, value: string | undefined): boolean {
-          return this.unit !== InventoryUnit.CUSTOM || (!!value && value.length > 0);
-        },
-        message: 'Custom unit is required when unit type is custom',
-      },
-    },
   },
   {
     timestamps: true,
@@ -83,6 +68,15 @@ inventorySchema.pre('save', function(this: IInventory & Document, next) {
   if (this.isModified('unitValue') || this.isModified('pricePerUnit')) {
     this.totalPrice = this.unitValue * this.pricePerUnit;
   }
+  next();
+});
+
+// Always populate the unit reference
+inventorySchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'unit',
+    select: 'name symbol'
+  });
   next();
 });
 

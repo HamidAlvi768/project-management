@@ -12,7 +12,9 @@ import {
   IPhase,
   IPhaseInput,
   ITask,
-  ITaskInput
+  ITaskInput,
+  ICustomUnit,
+  ICustomUnitInput
 } from './types';
 import axios from 'axios';
 
@@ -455,4 +457,50 @@ export const taskInventoryApi = {
       })
     );
   }
+};
+
+// Custom Units API
+export const customUnitApi = {
+  getAll: async (params?: { search?: string; active?: boolean }): Promise<ApiResponse<ICustomUnit[]>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.active !== undefined) queryParams.append('active', params.active.toString());
+    
+    const response = await fetch(`${BASE_URL}/custom-units?${queryParams}`);
+    return handleResponse<ApiResponse<ICustomUnit[]>>(response);
+  },
+
+  getOne: async (id: string): Promise<ApiResponse<ICustomUnit>> => {
+    const response = await fetch(`${BASE_URL}/custom-units/${id}`);
+    return handleResponse<ApiResponse<ICustomUnit>>(response);
+  },
+
+  create: async (data: ICustomUnitInput): Promise<ApiResponse<ICustomUnit>> => {
+    const response = await fetch(`${BASE_URL}/custom-units`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ApiResponse<ICustomUnit>>(response);
+  },
+
+  update: async (id: string, data: Partial<ICustomUnitInput>): Promise<ApiResponse<ICustomUnit>> => {
+    const response = await fetch(`${BASE_URL}/custom-units/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<ApiResponse<ICustomUnit>>(response);
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await fetch(`${BASE_URL}/custom-units/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<ApiResponse<void>>(response);
+  },
 }; 
