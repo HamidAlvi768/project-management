@@ -34,8 +34,6 @@ const taskSchema = z.object({
     .min(1, 'Description is required')
     .max(500, 'Description cannot be more than 500 characters'),
   type: z.enum(['construction', 'procurement', 'inspection'] as const),
-  assignedTo: z.string()
-    .min(1, 'Assigned to is required'),
 });
 
 const TaskModal: React.FC<TaskModalProps> = ({ task, projectId, phaseId, onClose, onSave }) => {
@@ -48,8 +46,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectId, phaseId, onClose
       endDate: task.endDate.split('T')[0],
       status: task.status,
       type: task.type,
-      estimatedCost: task.estimatedCost,
-      assignedTo: task.assignedTo
+      estimatedCost: task.estimatedCost
     } : {
       status: 'pending',
       type: 'construction',
@@ -171,18 +168,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, projectId, phaseId, onClose
             />
             {errors.estimatedCost && (
               <p className="text-sm text-red-500">{errors.estimatedCost.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="assignedTo">Assigned To</Label>
-            <Input
-              id="assignedTo"
-              {...register('assignedTo')}
-              placeholder="Enter assignee name"
-            />
-            {errors.assignedTo && (
-              <p className="text-sm text-red-500">{errors.assignedTo.message}</p>
             )}
           </div>
 

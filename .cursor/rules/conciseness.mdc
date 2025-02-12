@@ -1,0 +1,11 @@
+---
+description: The fewer lines of code, the better
+globs: 
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+The fewer lines of code, the better
+Always try to follow the DRY principle

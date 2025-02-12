@@ -690,6 +690,103 @@
           }
         }
       ]
+    },
+    {
+      "name": "Custom Units",
+      "item": [
+        {
+          "name": "Get All Custom Units",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "meter",
+                  "description": "Search in name, symbol, or description (optional)",
+                  "disabled": true
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "description": "Filter by active status (optional)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Custom Unit by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Custom Unit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Square Feet\",\n  \"symbol\": \"sq ft\",\n  \"description\": \"Standard unit for measuring floor area\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/custom-units",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units"]
+            }
+          }
+        },
+        {
+          "name": "Update Custom Unit",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Square Feet Updated\",\n  \"symbol\": \"sq ft\",\n  \"description\": \"Updated description for square feet unit\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Custom Unit",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/custom-units/{{custom_unit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["custom-units", "{{custom_unit_id}}"]
+            }
+          }
+        }
+      ]
     }
   ]
 } 

@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IInventory, IInventoryInput, InventoryUnit } from '../services/types';
+import { IInventory, IInventoryInput } from '../services/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchCustomUnits } from '@/store/slices/customUnitSlice';
+import { Link } from 'react-router-dom';
 
 interface InventoryModalProps {
   inventory?: IInventory | null;
@@ -18,51 +21,87 @@ interface InventoryModalProps {
 
 const inventorySchema = z.object({
   name: z.string()
-    .min(1, 'Name is required')
+    .min(1, 'Inventory name is required')
     .max(100, 'Name cannot be more than 100 characters'),
   description: z.string()
     .min(1, 'Description is required')
     .max(500, 'Description cannot be more than 500 characters'),
-  unit: z.enum(['pieces', 'kg', 'liters', 'meters', 'square_meters', 'cubic_meters', 'custom'] as const),
-  customUnit: z.string().optional(),
+  unit: z.string()
+    .min(1, 'Unit is required'),
   unitValue: z.number()
-    .min(0, 'Qunatity must be positive'),
+    .min(0.01, 'Quantity must be greater than 0'),
   pricePerUnit: z.number()
-    .min(0, 'Price per unit must be positive'),
+    .min(0.01, 'Price per unit must be greater than 0'),
 });
 
 const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onSave }) => {
+  const dispatch = useAppDispatch();
+  const { units: customUnits, isLoading: unitsLoading } = useAppSelector((state) => state.customUnit);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchCustomUnits({ active: true }));
+  }, [dispatch]);
+
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<IInventoryInput>({
     resolver: zodResolver(inventorySchema),
     defaultValues: inventory ? {
       name: inventory.name,
       description: inventory.description,
-      unit: inventory.unit,
-      customUnit: inventory.customUnit,
+      unit: typeof inventory.unit === 'string' ? inventory.unit : inventory.unit._id,
       unitValue: inventory.unitValue,
       pricePerUnit: inventory.pricePerUnit,
-    } : {
-      unit: 'pieces' as InventoryUnit,
-    }
+    } : undefined
   });
 
-  const selectedUnit = watch('unit');
-  const unitValue = watch('unitValue') || 0;
-  const pricePerUnit = watch('pricePerUnit') || 0;
-  const totalPrice = unitValue * pricePerUnit;
+  const onSubmit = async (data: IInventoryInput) => {
+    try {
+      setIsSubmitting(true);
+      await onSave(data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  const unitOptions: { value: InventoryUnit; label: string }[] = [
-    { value: 'pieces', label: 'Pieces' },
-    { value: 'kg', label: 'Kilograms' },
-    { value: 'liters', label: 'Liters' },
-    { value: 'meters', label: 'Meters' },
-    { value: 'square_meters', label: 'Square Meters' },
-    { value: 'cubic_meters', label: 'Cubic Meters' },
-    { value: 'custom', label: 'Custom Unit' },
-  ];
+  const getUnitLabel = (unitId: string) => {
+    const unit = customUnits.find(u => u._id === unitId);
+    return unit ? `${unit.name} (${unit.symbol})` : '';
+  };
+
+  // Handle dialog close
+  const handleDialogClose = () => {
+    if (isSelectOpen) {
+      return; // Prevent dialog from closing while select is open
+    }
+    onClose();
+  };
+
+  if (customUnits.length === 0) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>No Units Available</DialogTitle>
+            <DialogDescription>
+              You need to create at least one unit before adding inventory items.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center space-y-4 py-6">
+            <p className="text-center text-muted-foreground">
+              Please create a unit first to continue.
+            </p>
+            <Button asChild>
+              <Link to="/settings/custom-units">Create Unit</Link>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{inventory ? 'Edit Inventory' : 'Add New Inventory'}</DialogTitle>
@@ -70,7 +109,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onS
             {inventory ? 'Edit the inventory details below.' : 'Fill in the inventory details below.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSave)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -98,38 +137,54 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onS
           <div className="space-y-2">
             <Label htmlFor="unit">Unit</Label>
             <Select
-              onValueChange={(value: InventoryUnit) => setValue('unit', value)}
-              defaultValue={inventory?.unit || 'pieces'}
+              onValueChange={(value: string) => {
+                setValue('unit', value);
+                setIsSelectOpen(false);
+              }}
+              value={watch('unit')}
+              onOpenChange={setIsSelectOpen}
+              open={isSelectOpen}
+              disabled={unitsLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select unit" />
+                <SelectValue placeholder={unitsLoading ? "Loading units..." : "Select unit"}>
+                  {watch('unit') && !unitsLoading && getUnitLabel(watch('unit'))}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
-                {unitOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
+              {isSelectOpen && (
+                <SelectContent 
+                  position="popper" 
+                  className="w-[--radix-select-trigger-width]"
+                  align="start"
+                  sideOffset={4}
+                  onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                  }}
+                  onEscapeKeyDown={(e) => {
+                    e.preventDefault();
+                    setIsSelectOpen(false);
+                  }}
+                  onPointerDownOutside={(e) => {
+                    e.preventDefault();
+                    setIsSelectOpen(false);
+                  }}
+                >
+                  {unitsLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Loading units...
+                    </SelectItem>
+                  ) : customUnits.map((unit) => (
+                    <SelectItem key={unit._id} value={unit._id}>
+                      {unit.name} ({unit.symbol})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              )}
             </Select>
             {errors.unit && (
               <p className="text-sm text-red-500">{errors.unit.message}</p>
             )}
           </div>
-
-          {selectedUnit === 'custom' && (
-            <div className="space-y-2">
-              <Label htmlFor="customUnit">Custom Unit</Label>
-              <Input
-                id="customUnit"
-                {...register('customUnit')}
-                placeholder="Enter custom unit"
-              />
-              {errors.customUnit && (
-                <p className="text-sm text-red-500">{errors.customUnit.message}</p>
-              )}
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="unitValue">Quantity</Label>
@@ -138,7 +193,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onS
               type="number"
               step="0.01"
               {...register('unitValue', { valueAsNumber: true })}
-              placeholder="Enter Qunatity"
+              placeholder="Enter quantity"
             />
             {errors.unitValue && (
               <p className="text-sm text-red-500">{errors.unitValue.message}</p>
@@ -146,7 +201,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onS
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pricePerUnit">Price per Unit (PKR)</Label>
+            <Label htmlFor="pricePerUnit">Price per Unit</Label>
             <Input
               id="pricePerUnit"
               type="number"
@@ -159,19 +214,12 @@ const InventoryModal: React.FC<InventoryModalProps> = ({ inventory, onClose, onS
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Total Price (PKR)</Label>
-            <div className="p-2 bg-gray-50 rounded-md">
-              <span className="font-medium">{totalPrice.toLocaleString()}</span>
-            </div>
-          </div>
-
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit">
-              {inventory ? 'Update' : 'Create'}
+            <Button type="submit" disabled={isSubmitting || unitsLoading}>
+              {isSubmitting ? 'Saving...' : inventory ? 'Update' : 'Create'}
             </Button>
           </div>
         </form>

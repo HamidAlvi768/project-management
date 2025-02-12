@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { PageTitle } from '../components/ui/page-title';
 import PhaseModal from '../components/PhaseModal';
 import { phaseApi, projectApi } from '../services/api';
-import { IPhase, IPhaseInput, IProject } from '../services/types';
+import { IPhase, IPhaseInput, IProject, ApiResponse } from '../services/types';
 import { toast } from '../components/ui/use-toast';
 import { useToast } from "@/components/ui/use-toast";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -47,13 +47,19 @@ const Phases: React.FC = () => {
   useEffect(() => {
     if (projectId) {
       projectApi.getOne(projectId)
-        .then(response => {
-          setProject(response.data);
+        .then((response: ApiResponse<IProject>) => {
+          console.log('Project data received:', response);
+          if (response.data && response.data.data) {
+            setProject(response.data.data);
+          } else {
+            throw new Error(response.message || 'Failed to load project data');
+          }
         })
         .catch(error => {
+          console.error('Error fetching project:', error);
           toast({
             title: "Error",
-            description: "Failed to load project",
+            description: error.message || "Failed to load project",
             variant: "destructive",
           });
         });
@@ -202,16 +208,16 @@ const Phases: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Estimated Budget:</span>
-                      <span className="font-medium">PKR {phase.estimatedBudget.toLocaleString()}</span>
+                      <span className="font-medium">PKR {phase.estimatedBudget?.toLocaleString() ?? '0'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Actual Cost:</span>
-                      <span className="font-medium">PKR {phase.actualCost.toLocaleString()}</span>
+                      <span className="font-medium">PKR {phase.actualCost?.toLocaleString() ?? '0'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Budget Status:</span>
-                      <span className={`font-medium ${getBudgetStatusColor(phase.budgetVariance)}`}>
-                        {formatBudgetVariance(phase.budgetVariance)}
+                      <span className={`font-medium ${getBudgetStatusColor(phase.budgetVariance ?? 0)}`}>
+                        {formatBudgetVariance(phase.budgetVariance ?? 0)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -235,35 +241,18 @@ const Phases: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Completion</span>
-                        <span className="font-medium">{phase.completion}%</span>
+                        <span className="font-medium">{phase.completion ?? 0}%</span>
                       </div>
-                      <Progress value={phase.completion} className="h-2" />
+                      <Progress value={phase.completion ?? 0} className="h-2" />
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tasks</span>
-                      <span className="font-medium">{phase.taskCount}</span>
+                      <span className="font-medium">{phase.taskCount ?? 0}</span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">{phase.description}</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Labor</span>
-                        <span className="text-sm font-medium">PKR {phase.laborCost.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Material</span>
-                        <span className="text-sm font-medium">PKR {phase.materialCost.toLocaleString()}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Equipment</span>
-                        <span className="text-sm font-medium">PKR {phase.equipmentCost.toLocaleString()}</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -274,6 +263,13 @@ const Phases: React.FC = () => {
                     <span>Budget variance exceeds threshold</span>
                   </div>
                 )}
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={() => navigate(`/projects/${projectId}/phases/${phase._id}/tasks`)}
+                >
+                  View Tasks
+                </Button>
                 <div className="flex gap-2 w-full">
                   <Button
                     variant="outline"
@@ -294,14 +290,6 @@ const Phases: React.FC = () => {
                     Delete
                   </Button>
                 </div>
-                <Button
-                  variant="default"
-                  className="w-full"
-                  onClick={() => navigate(`/projects/${projectId}/phases/${phase._id}/tasks`)}
-                >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  View Tasks
-                </Button>
               </CardFooter>
             </Card>
           ))}

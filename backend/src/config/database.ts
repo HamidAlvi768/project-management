@@ -7,7 +7,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/projec
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const conn = await mongoose.connect(MONGODB_URI);
+    const conn = await mongoose.connect(MONGODB_URI, {
+      // MongoDB Atlas recommended options
+      retryWrites: true,
+      w: 'majority',
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
@@ -17,7 +25,7 @@ export const connectDB = async (): Promise<void> => {
 
 // Handle connection events
 mongoose.connection.on('connected', () => {
-  console.log('Mongoose connected to MongoDB');
+  console.log('Mongoose connected to MongoDB Atlas');
 });
 
 mongoose.connection.on('error', (err) => {
@@ -25,11 +33,12 @@ mongoose.connection.on('error', (err) => {
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('Mongoose disconnected from MongoDB');
+  console.log('Mongoose disconnected from MongoDB Atlas');
 });
 
 // Handle application termination
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
+  console.log('MongoDB connection closed through app termination');
   process.exit(0);
 }); 

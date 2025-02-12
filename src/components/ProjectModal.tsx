@@ -27,7 +27,7 @@ const projectSchema = z.object({
   customer: z.string()
     .min(1, 'Customer is required'),
   estimatedBudget: z.number()
-    .min(0, 'Budget must be positive'),
+    .min(0, 'Estimated budget must be positive'),
   startDate: z.string()
     .min(1, 'Start date is required'),
   endDate: z.string()
@@ -36,8 +36,6 @@ const projectSchema = z.object({
   description: z.string()
     .min(1, 'Description is required')
     .max(500, 'Description cannot be more than 500 characters'),
-  stakeholders: z.array(z.string())
-    .min(1, 'At least one stakeholder is required')
 });
 
 const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave }) => {
@@ -48,16 +46,14 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
     resolver: zodResolver(projectSchema),
     defaultValues: project ? {
       name: project.name,
-      customer: project.customer,
+      customer: typeof project.customer === 'string' ? project.customer : project.customer._id,
       estimatedBudget: project.estimatedBudget,
       startDate: project.startDate.split('T')[0],
       endDate: project.endDate.split('T')[0],
       status: project.status,
       description: project.description,
-      stakeholders: project.stakeholders
     } : {
       status: 'not-started' as ProjectStatus,
-      stakeholders: []
     }
   });
 
@@ -78,7 +74,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
 
   useEffect(() => {
     if (project?.customer) {
-      setValue('customer', project.customer);
+      setValue('customer', typeof project.customer === 'string' ? project.customer : project.customer._id);
       const initialCustomer = customers.find((c: ICustomer) => c._id === project.customer);
       if (initialCustomer) {
         dispatch(setSelectedCustomer(initialCustomer));
@@ -109,7 +105,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{project ? 'Edit Project' : 'Create Project'}</DialogTitle>
           <DialogDescription>
@@ -218,7 +214,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
             <Label htmlFor="status">Status</Label>
             <Select
               onValueChange={(value: ProjectStatus) => setValue('status', value)}
-              defaultValue={project?.status || 'not-started'}
+              defaultValue={watch('status')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -246,27 +242,6 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, onSave })
             {errors.description && (
               <p className="text-sm text-red-500">{errors.description.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="stakeholders">Stakeholders</Label>
-            <div className="flex gap-2">
-              <Input
-                id="stakeholders"
-                placeholder="Enter stakeholder names (comma-separated)"
-                {...register('stakeholders', {
-                  setValueAs: (value: string | string[]) => {
-                    if (Array.isArray(value)) return value;
-                    return value.split(',').map(s => s.trim()).filter(Boolean);
-                  }
-                })}
-                defaultValue={Array.isArray(project?.stakeholders) ? project.stakeholders.join(', ') : ''}
-              />
-            </div>
-            {errors.stakeholders && (
-              <p className="text-sm text-red-500">{errors.stakeholders.message}</p>
-            )}
-            <p className="text-sm text-muted-foreground">Enter stakeholder names separated by commas</p>
           </div>
 
           <div className="flex justify-end gap-2">

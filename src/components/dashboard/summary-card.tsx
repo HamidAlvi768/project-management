@@ -74,7 +74,7 @@ export function SummaryCard({
                   )}
                 >
                   {trend.isPositive ? "+" : "-"}
-                  {Math.abs(trend.value)}% since last week
+                  {Math.abs(trend.value)}% since last month
                 </p>
               </div>
             )}

@@ -9,13 +9,14 @@ import TaskModal from '../components/TaskModal';
 import TaskInventoryList from '../components/TaskInventoryList';
 import TaskInventoryModal from '../components/TaskInventoryModal';
 import { taskApi, phaseApi, projectApi } from '../services/api';
-import { ITask, ITaskInput, IPhase, IProject, ITaskInventoryInput } from '../services/types';
+import { ITask, ITaskInput, IPhase, IProject, ITaskInventoryInput, IInventoryInput } from '../services/types';
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchTasks, createTask, updateTask, deleteTask, setSelectedTask } from '@/store/slices/taskSlice';
 import { fetchTaskInventory, addInventoryToTask } from '@/store/slices/inventorySlice';
 import { RootState } from '@/store/store';
+import InventoryModal from '../components/InventoryModal';
 
 // At the top of the file, add type guards
 const ensureString = (value: any): string => {
@@ -41,6 +42,8 @@ const Tasks: React.FC = () => {
   const [phase, setPhase] = useState<IPhase | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [isNewInventoryModalOpen, setIsNewInventoryModalOpen] = useState(false);
+  const [selectedTaskForInventory, setSelectedTaskForInventory] = useState<ITask | null>(null);
   const { toast } = useToast();
 
   const taskInventory = useAppSelector((state: RootState) => 
@@ -186,6 +189,24 @@ const Tasks: React.FC = () => {
     }
   };
 
+  const handleAddNewInventory = async (data: IInventoryInput) => {
+    try {
+      // We'll implement this later when connecting to backend
+      console.log('New inventory data:', data);
+      setIsNewInventoryModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Inventory created successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create inventory",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -226,11 +247,11 @@ const Tasks: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="space-y-6">
         <PageTitle
-          title="Task Management"
-          breadcrumb={
-            <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
+          title="Tasks"
+          leftContent={
+            <Button size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Phases
             </Button>
@@ -251,11 +272,11 @@ const Tasks: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="space-y-6">
         <PageTitle
-          title="Task Management"
-          breadcrumb={
-            <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
+          title="Tasks"
+          leftContent={
+            <Button size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Phases
             </Button>
@@ -275,11 +296,11 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="space-y-6">
       <PageTitle
-        title="Task Management"
-        breadcrumb={
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
+        title={`Tasks - ${phase?.name || 'Loading...'}`}
+        leftContent={
+          <Button size="sm" onClick={() => navigate(`/projects/${projectId}/phases`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Phases
           </Button>
@@ -297,75 +318,111 @@ const Tasks: React.FC = () => {
           No tasks found. Click "Add Task" to create one.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tasks.map((task) => (
-            <Card key={task._id} className="flex flex-col">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl font-bold">{task.name}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Estimated Cost:</span>
-                      <span className="font-medium">PKR {task.estimatedCost.toLocaleString()}</span>
+        <div className="container mx-auto py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tasks.map((task) => (
+              <Card key={task._id} className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold">{task.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Estimated Cost:</span>
+                        <span className="font-medium">PKR {task.estimatedCost.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Timeline:</span>
+                        <span className="font-medium">
+                          {new Date(task.startDate).toLocaleDateString()} - {new Date(task.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Status:</span>
+                        <Badge variant="outline" className={getStatusColor(task.status)}>
+                          {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Type:</span>
+                        <Badge variant="outline" className={getTypeColor(task.type)}>
+                          {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Timeline:</span>
-                      <span className="font-medium">
-                        {new Date(task.startDate).toLocaleDateString()} - {new Date(task.endDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Badge variant="outline" className={getStatusColor(task.status)}>
-                        {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Type:</span>
-                      <Badge variant="outline" className={getTypeColor(task.type)}>
-                        {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">{task.description}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Assigned To:</span>
-                      <Badge variant="secondary">{task.assignedTo}</Badge>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Assigned To:</span>
+                        <Badge variant="secondary">{task.assignedTo}</Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between gap-2">
-                <Button variant="outline" size="sm" onClick={() => {
-                  console.log('Add Inventory clicked:', {
-                    selectedTask: task,
-                    project,
-                    projectCustomer: project?.customer
-                  });
-                  dispatch(setSelectedTask(task));
-                  setIsInventoryModalOpen(true);
-                }}>
-                  <Package className="h-4 w-4 mr-2" />
-                  Allocate Inventory
-                </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEditTask(task)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDeleteTask(task._id)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
+                </CardContent>
+                <CardFooter className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        dispatch(setSelectedTask(task));
+                        setIsInventoryModalOpen(true);
+                      }}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Allocate Inventory
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedTaskForInventory(task);
+                        setIsNewInventoryModalOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Inventory
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleEditTask(task)}
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleDeleteTask(task._id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         </div>
+      )}
+
+      {isNewInventoryModalOpen && (
+        <InventoryModal
+          onClose={() => {
+            setIsNewInventoryModalOpen(false);
+            setSelectedTaskForInventory(null);
+          }}
+          onSave={handleAddNewInventory}
+        />
       )}
 
       {isInventoryModalOpen && selectedTask && project && (
